@@ -95,7 +95,7 @@ module "ecs_clusters" {
 }
 
 module "rds_pg_cluster_app" {
-  source                     = "../modules/postgres"
+  source = "../../modules/postgres"
   identifier                 = "${local.base_name}-pg"
   instance_identifier_suffix = "db"
   promotion_tier             = 1

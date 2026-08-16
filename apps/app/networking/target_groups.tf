@@ -1,5 +1,5 @@
 module "target_group_app_api_pvt" {
-  source                           = "../../modules/alb"
+  source = "../../../modules/alb"
   create_target_group              = true
   name                             = "${var.base_name}-api-pvt"
   port                             = "5096"
@@ -16,7 +16,7 @@ module "target_group_app_api_pvt" {
 }
 
 module "target_group_app_front_pvt" {
-  source                           = "../../modules/alb"
+  source = "../../../modules/alb"
   create_target_group              = true
   name                             = "${var.base_name}-front-pvt"
   port                             = "5097"

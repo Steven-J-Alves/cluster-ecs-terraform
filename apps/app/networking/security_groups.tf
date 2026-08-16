@@ -1,6 +1,6 @@
 # ------- Service app-api - Security Group -------
 module "security_group_ecs_task_app_api" {
-  source              = "../../modules/securitygroup"
+  source = "../../../modules/securitygroup"
   name                = "${var.base_name}-api-task-sg"
   description         = "Controls access to the app-api ECS task"  
   vpc_id              = var.data_vpc.id
@@ -10,7 +10,7 @@ module "security_group_ecs_task_app_api" {
 
 # ------- Service app-worker - Security Group -------
 module "security_group_ecs_task_app_worker" {
-  source              = "../../modules/securitygroup"
+  source = "../../../modules/securitygroup"
   name                = "${var.base_name}-worker-task-sg"
   description         = "Controls access to the app-worker ECS task" 
   vpc_id              = var.data_vpc.id
@@ -18,7 +18,7 @@ module "security_group_ecs_task_app_worker" {
 }
 
 module "security_group_ecs_task_app_scheduler" {
-  source              = "../../modules/securitygroup"
+  source = "../../../modules/securitygroup"
   name                = "${var.base_name}-scheduler-task-sg"
   description         = "Controls access to the app-scheduler ECS task"
   vpc_id              = var.data_vpc.id
@@ -26,7 +26,7 @@ module "security_group_ecs_task_app_scheduler" {
 }
 
 module "security_group_ecs_task_app_manager" {
-  source              = "../../modules/securitygroup"
+  source = "../../../modules/securitygroup"
   name                = "${var.base_name}-manager-task-sg"
   description         = "Controls access to the app-manager ECS task"
   vpc_id              = var.data_vpc.id
@@ -34,7 +34,7 @@ module "security_group_ecs_task_app_manager" {
 }
 
 module "security_group_ecs_task_app_front" {
-  source              = "../../modules/securitygroup"
+  source = "../../../modules/securitygroup"
   name                = "${var.base_name}-front-task-sg"
   description         = "Controls access to the app-front ECS task"
   vpc_id              = var.data_vpc.id

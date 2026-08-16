@@ -1,6 +1,6 @@
 # ------- ECS Task Definition -------
 module "ecs_taks_definition_app_front" {
-  source             = "../../../modules/ecs_ec2/task_definition"
+  source = "../../../../modules/ecs_ec2/task_definition"
   name               = "${var.base_name}-front-tf"
   network_mode       = "bridge"
   container_name     = var.container_name["app_front"]
@@ -30,7 +30,7 @@ module "ecs_taks_definition_app_front" {
 
 # ------- ECS Service -------
 module "ecs_service_app_front" {
-  source                            = "../../../modules/ecs_ec2/service"
+  source = "../../../../modules/ecs_ec2/service"
   name                              = "${var.base_name}-front"
   desired_tasks                     = 1
   arn_security_group                = var.networking.security_group_ecs_task_app_front.sg_id
@@ -47,7 +47,7 @@ module "ecs_service_app_front" {
 # # ------- ECS Autoscaling Policies -------
 module "ecs_autoscaling_app-front" {
   depends_on    = [module.ecs_service_app_front]
-  source        = "../../../modules/ecs_ec2/autoscaling"
+  source = "../../../../modules/ecs_ec2/autoscaling"
   name          = "${var.base_name}-front"
   cluster_name  = var.cluster.ecs_cluster_name
   min_capacity  = 1

@@ -1,6 +1,6 @@
 # ------- ECS Task Definition -------
 module "ecs_taks_definition_app_scheduler" {
-  source             = "../../../modules/ecs_ec2/task_definition"
+  source = "../../../../modules/ecs_ec2/task_definition"
   name               = "${var.base_name}-scheduler-tf"
   network_mode       = "bridge"
   container_name     = var.container_name["app_scheduler"]
@@ -22,7 +22,7 @@ module "ecs_taks_definition_app_scheduler" {
 # ------- ECS Service -------
 module "ecs_service_app_scheduler" {
   #   depends_on          = [var.networking.alb_public]
-  source              = "../../../modules/ecs_ec2/service"
+  source = "../../../../modules/ecs_ec2/service"
   name                = "${var.base_name}-scheduler"
   desired_tasks       = 1
   arn_security_group  = var.networking.security_group_ecs_task_app_scheduler.sg_id
@@ -36,7 +36,7 @@ module "ecs_service_app_scheduler" {
 # # ------- ECS Autoscaling Policies -------
 module "ecs_autoscaling_app-scheduler" {
   depends_on   = [module.ecs_service_app_scheduler]
-  source       = "../../../modules/ecs_ec2/autoscaling"
+  source = "../../../../modules/ecs_ec2/autoscaling"
   name         = "${var.base_name}-scheduler"
   cluster_name = var.cluster.ecs_cluster_name
   min_capacity  = 1
