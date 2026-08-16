@@ -49,7 +49,7 @@ variable "managed_scaling_status" {
 variable "image_id" {
   description = "The ID of the AMI to use for the instance"
   type        = string
-  default     = "ami-0d499b11725042f65"
+  default     = "ami-02564a0a159a33ef6" # amzn2-ami-ecs-hvm-2.0.20260805-arm64-ebs (us-east-1)
 }
 
 # Define a variable for instance_type
