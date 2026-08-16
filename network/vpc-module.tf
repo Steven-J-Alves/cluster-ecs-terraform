@@ -14,7 +14,7 @@ module "vpc" {
   create_database_subnet_group       = var.vpc_create_database_subnet_group
   create_database_subnet_route_table = var.vpc_create_database_subnet_route_table
 
-  # TODO - atualmente sem feito
+  # Database subnets are intentionally isolated — no internet or NAT egress
   create_database_internet_gateway_route = false
   create_database_nat_gateway_route      = false
 
