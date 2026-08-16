@@ -1,11 +1,28 @@
-# -------
+# ------- Terraform + Backend -------
+terraform {
+  required_version = ">= 1.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+
+  backend "s3" {
+    bucket         = "kriolu-kloud-terraform-tfstates"
+    region         = "us-east-1"
+    key            = "cluster-terraform/prod/kriolu-kloud-cluster-us-east-1.tfstate"
+    dynamodb_table = "kriolu-kloud-cluster-terraform-lock"
+  }
+}
+
 # ------- ALB + Security/Target Groups -------
 module "networking" {
   source    = "./networking"
   base_name = local.base_name
 
   vpc_cidr = data.aws_vpc.kriolu_kloud_vpc.cidr_block
-  kriolu_kloud_vpn  = var.kriolu_kloud_vpn
 
   data_vpc             = data.aws_vpc.kriolu_kloud_vpc
   data_acm_certificate = data.aws_acm_certificate.acm_kriolu_kloud

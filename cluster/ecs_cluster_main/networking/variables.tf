@@ -1,6 +1,5 @@
 variable "base_name" { type = string }
 variable "vpc_cidr" { type = string }
-variable "kriolu_kloud_vpn" { type = string }
 
 variable "data_vpc" {}
 variable "data_acm_certificate" {}

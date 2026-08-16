@@ -1,24 +1,24 @@
 terraform {
-  required_version = ">= 0.13"
+  required_version = ">= 1.0"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.25.0"
+      version = "~> 5.0"
     }
   }
 
   backend "s3" {
-    key    = "cluster-terraform/prod/kriolu-kloud-cluster-us-east-1.tfstate"
-    region = "us-east-1"
-    bucket = "kriolu-kloud-cluster-tf"
+    bucket         = "kriolu-kloud-terraform-tfstates"
+    region         = "us-east-1"
+    key            = "cluster-terraform/prod/kriolu-kloud-cluster-us-east-1.tfstate"
+    dynamodb_table = "kriolu-kloud-cluster-terraform-lock"
   }
 }
 
 module "prod_ecs_cluster_main" {
   source = "../../ecs_cluster_main"
 
-  aws_profile = var.aws_profile
-  aws_region  = var.aws_region
+  aws_region = var.aws_region
 
   environment_name = var.environment_name
 

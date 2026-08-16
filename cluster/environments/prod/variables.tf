@@ -1,9 +1,4 @@
-# Variáveis para o projeto geral
-
-variable "aws_profile" {
-  type    = string
-  default = "prod-ecs-cluster-main"
-}
+# Variables for the prod environment
 
 variable "aws_region" {
   type    = string
@@ -17,20 +12,20 @@ variable "environment_name" {
 
 variable "vpc_id" {
   type    = string
-  default = "vpc-001fc689ea32d1009"
+  default = "vpc-0c6563b4e30626c2b"
 }
 
 variable "vpc_cidr" {
   type    = string
-  default = "10.211.0.0/16"
+  default = "10.220.0.0/16"
 }
 
 variable "subnet_public_filter" {
   type    = string
-  default = "kriolu-kloud-vpc-public*"
+  default = "*kriolu-kloud-vpc-public*"
 }
 
 variable "subnet_private_filter" {
   type    = string
-  default = "kriolu-kloud-vpc-private*"
+  default = "*kriolu-kloud-vpc-private*"
 }
