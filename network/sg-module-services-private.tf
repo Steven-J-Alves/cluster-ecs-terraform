@@ -1,7 +1,7 @@
 
 module "sg_services_private" {
   source      = "terraform-aws-modules/security-group/aws"
-  version     = "4.0.0"
+  version     = "5.2.0"
   name        = "services-private-sg"
   description = "Security Group with HTTP & SSH port open for entire VPC Block (IPv4 CIDR), egress ports are all world open"
   vpc_id      = module.vpc.vpc_id
