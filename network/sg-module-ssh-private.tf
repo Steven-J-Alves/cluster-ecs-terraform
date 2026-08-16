@@ -8,6 +8,7 @@ module "sg_ssh_private" {
   # ingress_rules = ["ssh-tcp", "http-80-tcp", "http-8080-tcp"]
   ingress_rules = ["all-all"]
 
-  egress_rules = ["all-all"]
+  ingress_cidr_blocks = [module.vpc.vpc_cidr_block, "0.0.0.0/0"]
+  egress_rules        = ["all-all"]
   tags         = local.common_tags
 }
