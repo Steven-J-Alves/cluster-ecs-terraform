@@ -1,6 +1,6 @@
 # network/ — VPC & Security Groups
 
-Stack Terraform que provisiona toda a camada de rede da Kriolu Kloud na AWS (us-east-1). É a **base** das stacks `cluster/` e `apps/` — estas consomem os IDs daqui via remote state ou data sources.
+Stack Terraform que provisiona toda a camada de rede na AWS (us-east-1). É a **base** das stacks `cluster/` e `apps/` — estas consomem os IDs daqui via remote state ou data sources.
 
 ---
 
@@ -27,19 +27,18 @@ Stack Terraform que provisiona toda a camada de rede da Kriolu Kloud na AWS (us-
 - **Route tables:** public → IGW, private → NAT GW, database → isolada (sem saída para internet)
 
 ### DB Subnet Group
-- Nome: `h-kriolu-kloud-vpc` (prefix `h-` = homolog)
 - Cobre as 4 database subnets
 - Usado pelo Aurora PostgreSQL na stack `apps/`
 
 ### Security Groups (5 SGs)
 
-| SG | ID | Ingress | Egress | Usado por |
-|---|---|---|---|---|
-| `alb-public-sg` | `sg-06857ad9c4fdcd339` | all-all de VPC + 0.0.0.0/0 | all | ALB público |
-| `alb-private-sg` | `sg-05ac56816e4a11364` | all-all de VPC + 0.0.0.0/0 | all | ALB privado |
-| `services-private-sg` | `sg-00d7915d98097b6ce` | all-all de VPC + 0.0.0.0/0 | all | ECS services |
-| `data-private-sg` | `sg-0f9c00e33cf7b4a97` | all-all de VPC + 0.0.0.0/0 | all | Aurora, ElastiCache |
-| `ssh-private-sg` | `sg-02e32c692736aaa3f` | all-all de VPC + 0.0.0.0/0 | all | EC2 instances / bastion |
+| SG | Ingress | Egress | Usado por |
+|---|---|---|---|
+| `alb-public-sg` | all-all de VPC CIDR + `0.0.0.0/0` | all | ALB público |
+| `alb-private-sg` | all-all de VPC CIDR + `0.0.0.0/0` | all | ALB privado |
+| `services-private-sg` | all-all de VPC CIDR + `0.0.0.0/0` | all | ECS services |
+| `data-private-sg` | all-all de VPC CIDR + `0.0.0.0/0` | all | Aurora, ElastiCache |
+| `ssh-private-sg` | all-all de VPC CIDR + `0.0.0.0/0` | all | EC2 instances / bastion |
 
 ---
 
@@ -47,39 +46,37 @@ Stack Terraform que provisiona toda a camada de rede da Kriolu Kloud na AWS (us-
 
 ```hcl
 backend "s3" {
-  bucket         = "kriolu-kloud-terraform-tfstates"
+  bucket         = "<tfstates-bucket>"
   region         = "us-east-1"
   key            = "network-terraform/homolog/kriolu-kloud-vpc-us-east-1.tfstate"
-  dynamodb_table = "kriolu-kloud-network-terraform-lock"
+  dynamodb_table = "<network-lock-table>"
 }
 ```
 
-| Recurso AWS | Nome |
-|---|---|
-| S3 bucket state | `kriolu-kloud-terraform-tfstates` |
-| DynamoDB lock | `kriolu-kloud-network-terraform-lock` |
-| IAM user CI | `kk-terraform-ci` (ARN: `arn:aws:iam::598552768939:user/kk-terraform-ci`) |
-| IAM policy | `kk-terraform-network-policy` (v2 — inclui RDS permissions) |
+Recursos AWS de suporte (criados manualmente antes do primeiro apply):
+- S3 bucket para state
+- DynamoDB table para lock
+- IAM user CI com policy de VPC + S3 + DynamoDB + RDS (para o DB subnet group)
 
 ---
 
 ## Outputs
 
-| Output | Valor actual |
+| Output | Descrição |
 |---|---|
-| `vpc_id` | `vpc-0c6563b4e30626c2b` |
-| `vpc_cidr_block` | `10.220.0.0/16` |
-| `private_subnets` | `[subnet-00bf9896652c27873, subnet-0fd3eb53f8862e333, subnet-013412e408cd68cac, subnet-008d0e06efa9bc710]` |
-| `public_subnets` | `[subnet-01a469f336db090f8, subnet-0427c631e430be10b, subnet-001dfe1855e10f411, subnet-00fc3798f7bd174f2]` |
-| `nat_public_ips` | `[3.214.176.234]` |
-| `azs` | `[us-east-1a, us-east-1b, us-east-1c, us-east-1d]` |
-| `security_group_id` | `sg-06857ad9c4fdcd339` (alb-public) |
-| `sg_id_alb_private` | `sg-05ac56816e4a11364` |
-| `sg_id_services_private` | `sg-00d7915d98097b6ce` |
-| `sg_id_data_private` | `sg-0f9c00e33cf7b4a97` |
-| `sg_id_ssh_private` | `sg-02e32c692736aaa3f` |
+| `vpc_id` | ID da VPC |
+| `vpc_cidr_block` | CIDR block da VPC |
+| `private_subnets` | Lista de IDs das subnets privadas (4) |
+| `public_subnets` | Lista de IDs das subnets públicas (4) |
+| `nat_public_ips` | IP público do NAT Gateway |
+| `azs` | Lista de AZs usadas |
+| `security_group_id` | ID do SG alb-public |
+| `sg_id_alb_private` | ID do SG alb-private |
+| `sg_id_services_private` | ID do SG services-private |
+| `sg_id_data_private` | ID do SG data-private |
+| `sg_id_ssh_private` | ID do SG ssh-private |
 
-> **Nota:** `database_subnets` e `database_subnet_group_name` existem no state mas não estão expostos como outputs ainda — adicionar a `vpc-outputs.tf` quando o `cluster/` ou `apps/` precisar deles.
+> **Nota:** `database_subnets` e `database_subnet_group_name` existem no state mas não estão expostos como outputs ainda — adicionar a `vpc-outputs.tf` quando `cluster/` ou `apps/` precisar deles.
 
 ---
 
@@ -94,9 +91,9 @@ Ficheiro: `network/.gitlab-ci.yml` (incluído pelo root `.gitlab-ci.yml`)
 | `network:apply` | **manual** | `terraform apply -auto-approve` (re-plan) |
 | `network:destroy` | **manual** | `terraform destroy -auto-approve` |
 
-Runner: `vps-native-runner` (shell executor, sem tags). Terraform via `docker run hashicorp/terraform:1.9 --user $(id -u):$(id -g)` para evitar ficheiros root-owned.
+Runner: shell executor no VPS. Terraform via `docker run hashicorp/terraform:1.9 --user $(id -u):$(id -g)` para evitar ficheiros root-owned.
 
-CI vars no grupo `ecs` (ID: 30): `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION` — todas protected + masked.
+CI vars no grupo GitLab `ecs`: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION` — todas protected + masked.
 
 ---
 
@@ -112,7 +109,7 @@ CI vars no grupo `ecs` (ID: 30): `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `
 ## Gotchas
 
 - **`ingress_cidr_blocks` é obrigatório** nos módulos security-group quando usas `ingress_rules`. Sem ele, o módulo tenta criar `cidr_blocks = null` → timeout de 5min no provider. Todos os SGs têm `ingress_cidr_blocks = [module.vpc.vpc_cidr_block, "0.0.0.0/0"]`.
-- **IAM policy v2** — a v1 não tinha `rds:CreateDBSubnetGroup`. O módulo VPC cria `aws_db_subnet_group` automaticamente quando `create_database_subnet_group = true`. Actualizado para v2 durante o primeiro apply.
+- **IAM policy precisa de `rds:CreateDBSubnetGroup`** — o módulo VPC cria `aws_db_subnet_group` automaticamente quando `create_database_subnet_group = true`. Adicionar à policy do CI user.
 - **NAT Gateway único** (`single_nat_gateway = true`) — reduz custo mas perde HA entre AZs. Aceitável para homolog.
 - **`database_subnets` sem rota para internet** — `create_database_nat_gateway_route = false` e `create_database_internet_gateway_route = false`. Aurora não precisa de saída.
 
@@ -123,9 +120,8 @@ CI vars no grupo `ecs` (ID: 30): `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `
 ```bash
 cd cluster-ecs-terraform/network
 
-# Credenciais (usar steven-prod para writes IAM/Route53, kk-terraform-ci para Terraform)
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
+export AWS_ACCESS_KEY_ID=<ci-user-key>
+export AWS_SECRET_ACCESS_KEY=<ci-user-secret>
 export AWS_DEFAULT_REGION=us-east-1
 
 # Via Docker (igual ao CI)
@@ -140,6 +136,6 @@ terraform plan
 terraform apply -auto-approve
 terraform output
 terraform state list
-terraform state rm '<address>'   # remover recurso do state sem destruir
+terraform state rm '<address>'
 terraform import '<address>' '<id>'
 ```
