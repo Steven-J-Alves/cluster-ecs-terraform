@@ -1,0 +1,4 @@
+include:
+  - local: network/.gitlab-ci.yml
+  # - local: cluster/.gitlab-ci.yml   # activar quando cluster/ estiver pronto
+  # - local: apps/.gitlab-ci.yml      # activar quando apps/ estiver pronto

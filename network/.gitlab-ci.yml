@@ -1,0 +1,125 @@
+variables:
+  TF_IMAGE: "hashicorp/terraform:1.9"
+  TF_DIR: "$CI_PROJECT_DIR/network"
+
+stages:
+  - validate
+  - plan
+  - apply
+  - destroy
+
+.tf:
+  before_script:
+    - docker pull $TF_IMAGE --quiet
+  script: ["true"]
+
+# Helper para correr terraform via Docker no shell runner
+.tf_run: &tf_run
+  docker run --rm
+    -v "$TF_DIR:/workspace"
+    -w /workspace
+    -e AWS_ACCESS_KEY_ID
+    -e AWS_SECRET_ACCESS_KEY
+    -e AWS_DEFAULT_REGION
+    $TF_IMAGE
+
+# ------- VALIDATE -------
+network:validate:
+  stage: validate
+  script:
+    - docker run --rm
+        -v "$TF_DIR:/workspace"
+        -w /workspace
+        -e AWS_ACCESS_KEY_ID
+        -e AWS_SECRET_ACCESS_KEY
+        -e AWS_DEFAULT_REGION
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm
+        -v "$TF_DIR:/workspace"
+        -w /workspace
+        $TF_IMAGE validate
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - network/**/*
+
+# ------- PLAN -------
+network:plan:
+  stage: plan
+  script:
+    - docker run --rm
+        -v "$TF_DIR:/workspace"
+        -w /workspace
+        -e AWS_ACCESS_KEY_ID
+        -e AWS_SECRET_ACCESS_KEY
+        -e AWS_DEFAULT_REGION
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm
+        -v "$TF_DIR:/workspace"
+        -w /workspace
+        -e AWS_ACCESS_KEY_ID
+        -e AWS_SECRET_ACCESS_KEY
+        -e AWS_DEFAULT_REGION
+        $TF_IMAGE plan -input=false -out=tfplan
+    - docker cp $(docker create $TF_IMAGE):/workspace/tfplan "$TF_DIR/tfplan" 2>/dev/null || true
+  artifacts:
+    paths:
+      - network/tfplan
+    expire_in: 1 day
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - network/**/*
+  needs:
+    - network:validate
+
+# ------- APPLY -------
+network:apply:
+  stage: apply
+  script:
+    - docker run --rm
+        -v "$TF_DIR:/workspace"
+        -w /workspace
+        -e AWS_ACCESS_KEY_ID
+        -e AWS_SECRET_ACCESS_KEY
+        -e AWS_DEFAULT_REGION
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm
+        -v "$TF_DIR:/workspace"
+        -w /workspace
+        -e AWS_ACCESS_KEY_ID
+        -e AWS_SECRET_ACCESS_KEY
+        -e AWS_DEFAULT_REGION
+        $TF_IMAGE apply -input=false -auto-approve
+  when: manual
+  allow_failure: false
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - network/**/*
+  needs:
+    - network:plan
+
+# ------- DESTROY -------
+network:destroy:
+  stage: destroy
+  script:
+    - docker run --rm
+        -v "$TF_DIR:/workspace"
+        -w /workspace
+        -e AWS_ACCESS_KEY_ID
+        -e AWS_SECRET_ACCESS_KEY
+        -e AWS_DEFAULT_REGION
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm
+        -v "$TF_DIR:/workspace"
+        -w /workspace
+        -e AWS_ACCESS_KEY_ID
+        -e AWS_SECRET_ACCESS_KEY
+        -e AWS_DEFAULT_REGION
+        $TF_IMAGE destroy -input=false -auto-approve
+  when: manual
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - network/**/*
