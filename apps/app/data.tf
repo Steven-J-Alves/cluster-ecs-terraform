@@ -1,7 +1,7 @@
 # ------- Account ID -------
 data "aws_caller_identity" "id_current_account" {}
 
-# ------- Cluster stack remote state — cluster ID, cluster name, private ALB HTTPS listener ARN -------
+# ------- Cluster stack remote state — cluster ID, name, and private ALB HTTPS listener ARN -------
 data "terraform_remote_state" "ecs_cluster_main" {
   backend = "s3"
   config = {
