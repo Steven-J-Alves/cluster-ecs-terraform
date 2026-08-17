@@ -156,8 +156,3 @@ variable "port_front_app" {
   default     = 80
 }
 
-variable "ec2_key_name" {
-  description = "EC2 SSH key pair name"
-  type        = string
-  default     = "kriolu-kloud-key"
-}

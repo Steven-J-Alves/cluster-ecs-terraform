@@ -1,6 +1,16 @@
 # ------- Account ID -------
 data "aws_caller_identity" "id_current_account" {}
 
+# ------- Cluster stack remote state (cluster ID, cluster name, private ALB listener ARN) -------
+data "terraform_remote_state" "ecs_cluster_main" {
+  backend = "s3"
+  config = {
+    bucket = "kriolu-kloud-terraform-tfstates"
+    key    = "cluster-terraform/prod/kriolu-kloud-cluster-us-east-1.tfstate"
+    region = "us-east-1"
+  }
+}
+
 # -------
 # ------- Common Data Soucers - Maverick -------
 data "aws_acm_certificate" "acm_kriolu_kloud" {
