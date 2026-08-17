@@ -140,3 +140,4 @@ module "workload_manager" {
   task_role_arn      = module.ecs_role.arn_role_ecs_task_role
   aws_region         = var.aws_region
 }
+
