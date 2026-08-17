@@ -87,3 +87,4 @@ cluster:destroy:
     - if: $CI_PIPELINE_SOURCE == "push"
       changes:
         - cluster/**/*
+# destroy prep
