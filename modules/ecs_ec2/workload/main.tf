@@ -1,5 +1,6 @@
 locals {
   is_http   = var.type == "http"
+  is_public = local.is_http && var.public_listener_arn != ""
   full_name = "${var.app_name}-${var.name}"
 }
 
@@ -56,6 +57,43 @@ resource "aws_alb_listener_rule" "rule" {
   }
 }
 
+# Target group on the public ALB (optional — HTTP workloads with public_listener_arn set)
+module "target_group_public" {
+  count  = local.is_public ? 1 : 0
+  source = "../../alb"
+
+  create_target_group              = true
+  name                             = "${local.full_name}-pub"
+  port                             = var.port
+  protocol                         = "HTTP"
+  vpc_id                           = var.vpc_id
+  tg_type                          = "instance"
+  health_check_path                = var.health_check_path
+  health_check_healthy_threshold   = 2
+  health_check_unhealthy_threshold = 2
+  health_check_timeout             = 3
+  health_check_interval            = 5
+  health_check_matcher             = var.health_check_matcher
+}
+
+# Listener rule on the public ALB — priority null = AWS auto-assigns (R3)
+resource "aws_alb_listener_rule" "rule_public" {
+  count        = local.is_public ? 1 : 0
+  listener_arn = var.public_listener_arn
+  priority     = null
+
+  action {
+    type             = "forward"
+    target_group_arn = module.target_group_public[0].arn_tg
+  }
+
+  condition {
+    host_header {
+      values = [var.public_host_header]
+    }
+  }
+}
+
 # Task definition — bridge mode, dynamic host port (hostPort = 0)
 module "task_definition" {
   source = "../task_definition"
@@ -83,11 +121,11 @@ module "service" {
   arn_security_group                = module.sg.sg_id
   ecs_cluster_id                    = var.cluster_id
   use_load_balancer                 = local.is_http
-  arn_target_group                  = local.is_http ? [module.target_group[0].arn_tg] : []
+  arn_target_group                  = local.is_public ? [module.target_group[0].arn_tg, module.target_group_public[0].arn_tg] : local.is_http ? [module.target_group[0].arn_tg] : []
   arn_task_definition               = module.task_definition.arn_task_definition
   subnets_id                        = var.private_subnets
-  container_port                    = local.is_http ? [var.port] : []
-  container_name                    = local.is_http ? [var.container_name] : []
+  container_port                    = local.is_public ? [var.port, var.port] : local.is_http ? [var.port] : []
+  container_name                    = local.is_public ? [var.container_name, var.container_name] : local.is_http ? [var.container_name] : []
   health_check_grace_period_seconds = local.is_http ? 15 : null
 }
 

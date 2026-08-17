@@ -67,6 +67,18 @@ variable "alb_priority" {
   default     = null
 }
 
+variable "public_listener_arn" {
+  description = "Public ALB HTTPS listener ARN — when set, creates a second TG + listener rule on the public ALB (HTTP workloads only)"
+  type        = string
+  default     = ""
+}
+
+variable "public_host_header" {
+  description = "Host-header value for the public ALB listener rule (required when public_listener_arn is set)"
+  type        = string
+  default     = ""
+}
+
 # Scaling
 variable "desired_count" {
   description = "Initial ECS desired task count"

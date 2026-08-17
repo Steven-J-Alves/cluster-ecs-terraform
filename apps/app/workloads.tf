@@ -3,6 +3,7 @@ locals {
   platform_cluster_id           = data.terraform_remote_state.ecs_cluster_main.outputs.ecs_cluster_id
   platform_cluster_name         = data.terraform_remote_state.ecs_cluster_main.outputs.ecs_cluster_name
   platform_private_listener_arn = data.terraform_remote_state.ecs_cluster_main.outputs.https_listener_arn_private
+  platform_public_listener_arn  = data.terraform_remote_state.ecs_cluster_main.outputs.https_listener_arn_public
   platform_allowed_cidrs        = [data.aws_vpc.crawler_vpc.cidr_block, var.kriolu_kloud_vpn]
   platform_private_subnets      = data.aws_subnets.private_subnets.ids
 }
@@ -62,6 +63,8 @@ module "workload_front" {
   private_subnets      = local.platform_private_subnets
   allowed_cidrs        = local.platform_allowed_cidrs
   private_listener_arn = local.platform_private_listener_arn
+  public_listener_arn  = local.platform_public_listener_arn
+  public_host_header   = "app.kriolu-kloud.cv"
   execution_role_arn   = module.ecs_role.arn_role
   task_role_arn        = module.ecs_role.arn_role_ecs_task_role
   aws_region           = var.aws_region
