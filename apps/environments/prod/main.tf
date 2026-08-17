@@ -1,44 +1,28 @@
 terraform {
-  required_version = ">= 0.13"
+  required_version = ">= 1.0"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.25.0"
+      version = "~> 5.0"
     }
   }
 
   backend "s3" {
-    key    = "apps-terraform/prod/kriolu-kloud-app-us-east-1.tfstate"
-    region = "us-east-1"
-    bucket = "kriolu-kloud-apps-tf"
+    bucket         = "kriolu-kloud-terraform-tfstates"
+    region         = "us-east-1"
+    key            = "apps-terraform/prod/kriolu-kloud-app-us-east-1.tfstate"
+    dynamodb_table = "kriolu-kloud-apps-terraform-lock"
   }
 }
 
 provider "aws" {
-  profile = var.aws_profile
-  region  = var.aws_region
+  region = var.aws_region
 }
-
-# provider "aws" {
-#   alias   = "kriolu_kloud_account"
-#   region  = var.aws_region
-
-#   default_tags {
-#     tags = {
-#       Environment = var.environment_name
-#       Service     = var.tag_service
-#       Owner       = var.tag_owner
-#       CostCenter  = var.tag_costcenter
-#     }
-#   }
-# }
 
 module "prod_app" {
   source = "../../app"
-  
-  aws_profile = var.aws_profile
 
-  aws_region  = var.aws_region
+  aws_region = var.aws_region
 
   environment_name = var.environment_name
   gitlab_branch    = var.gitlab_branch
@@ -48,5 +32,5 @@ module "prod_app" {
 
   subnet_public_filter  = var.subnet_public_filter
   subnet_private_filter = var.subnet_private_filter
-  rds_db_password = var.rds_db_password
+  rds_db_password       = var.rds_db_password
 }

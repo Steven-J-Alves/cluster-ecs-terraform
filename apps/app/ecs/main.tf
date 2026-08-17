@@ -5,7 +5,7 @@ module "ecs_core_services" {
   environment_name = var.environment_name
   aws_region       = var.aws_region
 
-  cluster = data.terraform_remote_state.ecs_cluster_crawler.outputs
+  cluster = data.terraform_remote_state.ecs_cluster_main.outputs
 
   networking           = var.networking
   data_private_subnets = var.data_private_subnets

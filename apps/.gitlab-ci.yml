@@ -1,126 +1,100 @@
+variables:
+  TF_IMAGE: "hashicorp/terraform:1.9"
+  # Mount the entire repo so relative module paths (../../modules/...) resolve correctly
+  REPO_HOST_DIR: "$CI_PROJECT_DIR"
+  TF_WORKDIR: "/workspace/apps/app"
+
 stages:
   - validate
   - plan
   - apply
   - destroy
 
-#
-image:
-  name: hashicorp/terraform:light
-  entrypoint:
-    - '/usr/bin/env'
-    - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
-
-variables:
-  # AWS_PROFILE: "${CI_COMMIT_BRANCH}-tf-crawler"
-  DEPLOY_ENV: $CI_COMMIT_BRANCH
-
-workflow:
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-      variables:
-        AWS_PROFILE: "kriolu-kloud-cluster"
-        DEPLOY_ENV: "prod"
-    - if: $CI_COMMIT_BRANCH == "homolog"
-      variables:
-        AWS_PROFILE: "kriolu-kloud-apps"
-        DEPLOY_ENV: "homolog"
-        
-before_script:
-  - echo "Starting Job and Check ENVs ..."
-  - echo "DEPLOY_ENV=$DEPLOY_ENV"
-
-  - echo "AWS_TERRAFORM_KEY_ID=$AWS_TERRAFORM_KEY_ID"
-  - echo "AWS_TERRAFORM_SECRET=$AWS_TERRAFORM_SECRET"
-  - echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION"
-
-  - echo "Configure AWS CLI ..."
-  - aws configure set aws_access_key_id "$AWS_TERRAFORM_KEY_ID" --profile $AWS_PROFILE
-  - aws configure set aws_secret_access_key "$AWS_TERRAFORM_SECRET" --profile $AWS_PROFILE
-  - aws configure set region "$AWS_DEFAULT_REGION" --profile $AWS_PROFILE
-  
-  - echo "Go to Terraform Environment ..."
-  - cd environments/$DEPLOY_ENV
-
-  - echo "Shared State from S3 ..."
-  - rm -rf .terraform
-
-  - echo "Terraform INIT ..."
-  - export TF_VAR_rds_db_password=$RDS_PASSWORD
-  - terraform --version
-  - terraform init
-
-#
 # ------- VALIDATE -------
-validate:
+apps:validate:
   stage: validate
   script:
-    - terraform validate
-  environment:
-    name: $DEPLOY_ENV
-  tags:
-    - runner-kriolu-kloud-shared
-  only:
-    # - dev
-    # - staging
-    - homolog
-    - main
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        $TF_IMAGE validate
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - apps/**/*
+        - modules/**/*
 
-#
 # ------- PLAN -------
-plan:
+apps:plan:
   stage: plan
   script:
-    - terraform plan
-  dependencies:
-    - validate
-  environment:
-    name: $DEPLOY_ENV
-  tags:
-    - runner-kriolu-kloud-shared
-  only:
-    # - dev
-    # - staging
-    - homolog
-    - main
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE plan -input=false -out=tfplan
+  artifacts:
+    paths:
+      - apps/app/tfplan
+    expire_in: 1 day
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps:validate
 
-
-#
 # ------- APPLY -------
-apply:
+apps:apply:
   stage: apply
   script:
-    - terraform apply -input=false -auto-approve
-  allow_failure: false
-  dependencies:
-    - plan
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE apply -input=false -auto-approve
   when: manual
-  environment:
-    name: $DEPLOY_ENV
-  tags:
-    - runner-kriolu-kloud-shared
-  only:
-    # - dev
-    # - staging
-    - homolog
-    - main
+  allow_failure: false
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps:plan
 
-
-#
 # ------- DESTROY -------
-destroy:
+apps:destroy:
   stage: destroy
   script:
-    - terraform destroy -input=false -auto-approve
-  dependencies:
-    - apply
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE destroy -input=false -auto-approve
   when: manual
-  environment:
-    name: $DEPLOY_ENV
-  tags:
-    - runner-kriolu-kloud-shared
-  only:
-    # - dev
-    # - staging
-    - homolog
-    - main
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - apps/**/*
+        - modules/**/*

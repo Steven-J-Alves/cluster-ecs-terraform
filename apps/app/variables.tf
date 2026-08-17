@@ -1,93 +1,92 @@
 # ------- Service Name -------
 variable "service_name" {
-  description = "Project Name"
+  description = "Project name"
   type        = string
   default     = "app"
 }
 
 variable "tag_service" {
-  description = "Default_Tag Service"
+  description = "Default tag: Service"
   type        = string
   default     = "App"
 }
 
 variable "tag_owner" {
-  description = "Default_Tag Owner"
+  description = "Default tag: Owner"
   type        = string
   default     = "KrioluKloud"
 }
 
 variable "tag_costcenter" {
-  description = "Default_Tag CostCenter"
+  description = "Default tag: CostCenter"
   type        = string
   default     = "KrioluKloud"
 }
 
-# -------
 # ------- AWS Access -------
 variable "aws_region" {
-  description = "The AWS Region in which you want to deploy the resources"
+  description = "AWS region where resources will be deployed"
   type        = string
-}
-variable "aws_profile" {
-  description = "The profile name that you have configured in the file .aws/credentials"
-  type        = string
+  default     = "us-east-1"
 }
 
-
-# -------
 # ------- AWS Resources -------
 variable "vpc_id" {
-  description = "VPC CIDR"
+  description = "ID of the VPC to deploy into"
   type        = string
+  default     = "vpc-0c6563b4e30626c2b"
 }
+
 variable "vpc_cidr" {
-  description = "VPC CIDR"
+  description = "CIDR block of the VPC"
   type        = string
+  default     = "10.220.0.0/16"
 }
 
 variable "subnet_public_filter" {
-  description = "Filtro para Subnets Publicas (tag:Name)"
+  description = "Name tag filter for public subnets (supports wildcards)"
   type        = string
+  default     = "*kriolu-kloud-vpc-public*"
 }
+
 variable "subnet_private_filter" {
-  description = "Filtro para Subnets Privadas (tag:Name)"
+  description = "Name tag filter for private subnets (supports wildcards)"
   type        = string
+  default     = "*kriolu-kloud-vpc-private*"
 }
 
 variable "sg_alb_public_filter" {
-  description = "Filtro para Grupo de Segurança ALB Público (tag:Name)"
+  description = "Name tag filter for the public ALB security group"
   type        = string
-  default     = "sg-alb-public"
+  default     = "alb-public-sg"
 }
+
 variable "sg_alb_private_filter" {
-  description = "Filtro para Grupo de Segurança ALB Privado (tag:Name)"
+  description = "Name tag filter for the private ALB security group"
   type        = string
-  default     = "sg-alb-private"
+  default     = "alb-private-sg"
 }
+
 variable "sg_data_private_filter" {
-  description = "Filtro para Grupo de Segurança Dados (tag:Name)"
+  description = "Name tag filter for the data-layer security group"
   type        = string
-  default     = "sg-data-private"
+  default     = "data-private-sg"
 }
+
 variable "sg_services_private_filter" {
-  description = "Filtro para Grupo de Segurança Serviços Privado (tag:Name)"
+  description = "Name tag filter for the services security group"
   type        = string
-  default     = "sg-services-private"
+  default     = "services-private-sg"
 }
+
 variable "sg_ssh_private_filter" {
-  description = "Filtro para Grupo de Segurança SSH Privado (tag:Name)"
+  description = "Name tag filter for the SSH security group"
   type        = string
-  default     = "sg-ssh-private"
-}
-variable "sg_ec2_private_filter" {
-  description = "Filtro para Grupo de Segurança EC2 Privado (tag:Name)"
-  type        = string
-  default     = "sg-ec2-private"
+  default     = "ssh-private-sg"
 }
 
 variable "iam_role_names" {
-  description = "The name of the IAM Role for each service"
+  description = "IAM role name for each service"
   type        = map(string)
   default = {
     devops        = "app-tf-devops-role"
@@ -97,61 +96,50 @@ variable "iam_role_names" {
 }
 
 variable "kriolu_kloud_vpn" {
-  description = "IP da VPN da IN8"
+  description = "VPN/office IP CIDR allowed for ingress to service security groups"
   type        = string
-  default     = "189.36.129.142/32"
+  default     = "10.220.0.0/16" # defaults to VPC CIDR; override with actual VPN IP via TF_VAR_kriolu_kloud_vpn
 }
 
-
-# -------
-# ------- Environment + GitLab -------
+# ------- Environment -------
 variable "environment_name" {
-  description = "The name of your environment"
+  description = "Environment name (used in resource name prefixes)"
   type        = string
+  default     = "prod"
 
   validation {
     condition     = length(var.environment_name) < 23
     error_message = "Due the this variable is used for concatenation of names of other resources, the value must have less than 23 characters."
   }
 }
-variable "gitlab_token" {
-  description = "Personal access token from GitLab"
-  type        = string
-  sensitive   = true
-  default     = "Di6htGZubyL8PLktyYGW"
-}
-variable "gitlab_url" {
-  description = "The URL of the GitLab repository"
-  type        = string
-  default     = "https://git.kriolu-kloud.cv"
-}
+
 variable "gitlab_branch" {
-  description = "The name of branch the GitLab repository, which is going to trigger a new CodePipeline excecution"
+  description = "GitLab branch that triggered the deployment"
   type        = string
+  default     = "main"
 }
 
-# -------
-# ------- Services of Project -------
-variable "rds_db_password" {
-  description = "Password for the MySQL database"
+variable "gitlab_url" {
+  description = "GitLab instance URL"
   type        = string
+  default     = "https://gitlab.kriolu-kloud.cv"
 }
-# -------
-# ------- Services of Project -------
+
+# ------- Services -------
+variable "rds_db_password" {
+  description = "Password for the Aurora PostgreSQL database — pass via TF_VAR_rds_db_password in CI"
+  type        = string
+  sensitive   = true
+}
+
 variable "port_api_app" {
-  description = "The port used by service hermes"
+  description = "Port exposed by the app-api container"
   type        = number
   default     = 4004
 }
 
-variable "folder_path_crawler" {
-  description = "The location of the crawler files"
-  type        = string
-  default     = "../services/crawler/."
-}
-
 variable "container_name" {
-  description = "The name of the container of each ECS service"
+  description = "Container name for each ECS service"
   type        = map(string)
   default = {
     app_api        = "container-app-api"
@@ -163,13 +151,13 @@ variable "container_name" {
 }
 
 variable "port_front_app" {
-  description = "The port exposed by the nginx serving app-front"
+  description = "Port exposed by the nginx serving app-front"
   type        = number
   default     = 80
 }
 
 variable "ec2_key_name" {
-  description = "EC2 SSH key pair"
+  description = "EC2 SSH key pair name"
   type        = string
-  default     = "kriolu-kloud-use1.pem"
+  default     = "kriolu-kloud-key"
 }

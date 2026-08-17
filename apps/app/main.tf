@@ -1,4 +1,22 @@
-# -------
+# ------- Terraform + Backend -------
+terraform {
+  required_version = ">= 1.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+
+  backend "s3" {
+    bucket         = "kriolu-kloud-terraform-tfstates"
+    region         = "us-east-1"
+    key            = "apps-terraform/prod/kriolu-kloud-app-us-east-1.tfstate"
+    dynamodb_table = "kriolu-kloud-apps-terraform-lock"
+  }
+}
+
 # ------- ALB + Security/Target Groups -------
 module "networking" {
   source    = "./networking"

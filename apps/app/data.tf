@@ -5,13 +5,13 @@ data "aws_caller_identity" "id_current_account" {}
 # ------- Common Data Soucers - Maverick -------
 data "aws_acm_certificate" "acm_kriolu_kloud" {
   domain      = "*.kriolu-kloud.cv"
-  statuses    = ["ISSUED"]
+  statuses    = ["ISSUED", "PENDING_VALIDATION"]
   most_recent = true
 }
 
 data "aws_acm_certificate" "acm_kriolu_kloud_private" {
   domain      = "*.kriolu-kloud.cv"
-  statuses    = ["ISSUED"]
+  statuses    = ["ISSUED", "PENDING_VALIDATION"]
   most_recent = true
 }
 
