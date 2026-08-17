@@ -117,7 +117,7 @@ module "rds_pg_cluster_app" {
   identifier                 = "${local.base_name}-pg"
   instance_identifier_suffix = "db"
   promotion_tier             = 1
-  monitoring_interval        = 60
+  monitoring_interval        = 0
   database                   = "app"
   username                   = "app_user"
   engine                     = "aurora-postgresql"
