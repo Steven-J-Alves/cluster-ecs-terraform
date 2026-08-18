@@ -1,6 +1,6 @@
 variables:
   TF_IMAGE: "hashicorp/terraform:1.9"
-  # Mount the entire repo so relative module paths (../../modules/...) resolve correctly
+  # Mount the entire repo so relative module paths resolve correctly
   REPO_HOST_DIR: "$CI_PROJECT_DIR"
   APPS_TF_WORKDIR: "/workspace/apps/app"
 
