@@ -2,7 +2,7 @@ variables:
   TF_IMAGE: "hashicorp/terraform:1.9"
   # Mount the entire repo so relative module paths (../../modules/...) resolve correctly
   REPO_HOST_DIR: "$CI_PROJECT_DIR"
-  TF_WORKDIR: "/workspace/apps/app"
+  APPS_TF_WORKDIR: "/workspace/apps/app"
 
 stages:
   - validate
@@ -15,12 +15,12 @@ apps:validate:
   stage: validate
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         -e TF_VAR_rds_db_password
         $TF_IMAGE init -input=false -reconfigure
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
         $TF_IMAGE validate
   rules:
     - if: $CI_PIPELINE_SOURCE == "push"
@@ -33,12 +33,12 @@ apps:plan:
   stage: plan
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         -e TF_VAR_rds_db_password
         $TF_IMAGE init -input=false -reconfigure
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         -e TF_VAR_rds_db_password
         $TF_IMAGE plan -input=false -out=tfplan
@@ -59,12 +59,12 @@ apps:apply:
   stage: apply
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         -e TF_VAR_rds_db_password
         $TF_IMAGE init -input=false -reconfigure
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         -e TF_VAR_rds_db_password
         $TF_IMAGE apply -input=false -auto-approve
@@ -83,12 +83,12 @@ apps:destroy:
   stage: destroy
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         -e TF_VAR_rds_db_password
         $TF_IMAGE init -input=false -reconfigure
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $TF_WORKDIR
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         -e TF_VAR_rds_db_password
         $TF_IMAGE destroy -input=false -auto-approve
