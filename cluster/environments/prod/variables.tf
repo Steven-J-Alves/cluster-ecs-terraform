@@ -10,11 +10,6 @@ variable "environment_name" {
   default = "prod"
 }
 
-variable "vpc_id" {
-  type    = string
-  default = "vpc-0c6563b4e30626c2b"
-}
-
 variable "vpc_cidr" {
   type    = string
   default = "10.220.0.0/16"

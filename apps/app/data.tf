@@ -38,7 +38,9 @@ data "aws_acm_certificate" "acm_kriolu_kloud_private" {
 # -------
 # ------- VPC -------
 data "aws_vpc" "crawler_vpc" {
-  id = var.vpc_id
+  tags = {
+    Owner = "KrioluKloud"
+  }
 }
 
 # -------

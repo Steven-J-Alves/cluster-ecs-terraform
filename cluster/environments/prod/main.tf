@@ -22,7 +22,6 @@ module "prod_ecs_cluster_main" {
 
   environment_name = var.environment_name
 
-  vpc_id   = var.vpc_id
   vpc_cidr = var.vpc_cidr
 
   subnet_public_filter  = var.subnet_public_filter

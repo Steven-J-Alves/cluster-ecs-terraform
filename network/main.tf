@@ -16,7 +16,7 @@ terraform {
   backend "s3" {
     bucket = "kriolu-kloud-terraform-tfstates"
     region = "us-east-1"
-    key    = "network-terraform/homolog/kriolu-kloud-vpc-us-east-1.tfstate"
+    key    = "network-terraform/prod/kriolu-kloud-vpc-us-east-1.tfstate"
 
     # Must be created manually before the first apply
     dynamodb_table = "kriolu-kloud-network-terraform-lock"

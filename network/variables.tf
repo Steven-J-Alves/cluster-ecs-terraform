@@ -4,7 +4,7 @@
 variable "environment_name" {
   description = "The name of your environment"
   type        = string
-  default     = "homolog" # overridden by CI based on branch
+  default     = "prod"
 
   validation {
     condition     = length(var.environment_name) < 23

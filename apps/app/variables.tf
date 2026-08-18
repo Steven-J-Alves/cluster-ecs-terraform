@@ -31,12 +31,6 @@ variable "aws_region" {
 }
 
 # ------- AWS Resources -------
-variable "vpc_id" {
-  description = "ID of the VPC to deploy into"
-  type        = string
-  default     = "vpc-0c6563b4e30626c2b"
-}
-
 variable "vpc_cidr" {
   description = "CIDR block of the VPC"
   type        = string
