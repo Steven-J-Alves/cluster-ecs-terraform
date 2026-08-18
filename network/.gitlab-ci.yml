@@ -1,6 +1,8 @@
 variables:
   TF_IMAGE: "hashicorp/terraform:1.9"
-  TF_DIR: "$CI_PROJECT_DIR/network"
+  # Mount the entire network/ dir so relative module paths resolve correctly
+  NETWORK_HOST_DIR: "$CI_PROJECT_DIR/network"
+  NETWORK_TF_WORKDIR: "/workspace/vpc_main"
 
 stages:
   - validate
@@ -12,8 +14,8 @@ stages:
 .tf_run: &tf_run >-
   docker run --rm
   --user "$(id -u):$(id -g)"
-  -v "$TF_DIR:/workspace"
-  -w /workspace
+  -v "$NETWORK_HOST_DIR:/workspace"
+  -w $NETWORK_TF_WORKDIR
   -e AWS_ACCESS_KEY_ID
   -e AWS_SECRET_ACCESS_KEY
   -e AWS_DEFAULT_REGION
@@ -24,11 +26,11 @@ network:validate:
   stage: validate
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$TF_DIR:/workspace" -w /workspace
+        -v "$NETWORK_HOST_DIR:/workspace" -w $NETWORK_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         $TF_IMAGE init -input=false -reconfigure
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$TF_DIR:/workspace" -w /workspace
+        -v "$NETWORK_HOST_DIR:/workspace" -w $NETWORK_TF_WORKDIR
         $TF_IMAGE validate
   rules:
     - if: $CI_PIPELINE_SOURCE == "push"
@@ -40,16 +42,16 @@ network:plan:
   stage: plan
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$TF_DIR:/workspace" -w /workspace
+        -v "$NETWORK_HOST_DIR:/workspace" -w $NETWORK_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         $TF_IMAGE init -input=false -reconfigure
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$TF_DIR:/workspace" -w /workspace
+        -v "$NETWORK_HOST_DIR:/workspace" -w $NETWORK_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         $TF_IMAGE plan -input=false -out=tfplan
   artifacts:
     paths:
-      - network/tfplan
+      - network/vpc_main/tfplan
     expire_in: 1 day
   rules:
     - if: $CI_PIPELINE_SOURCE == "push"
@@ -63,11 +65,11 @@ network:apply:
   stage: apply
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$TF_DIR:/workspace" -w /workspace
+        -v "$NETWORK_HOST_DIR:/workspace" -w $NETWORK_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         $TF_IMAGE init -input=false -reconfigure
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$TF_DIR:/workspace" -w /workspace
+        -v "$NETWORK_HOST_DIR:/workspace" -w $NETWORK_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         $TF_IMAGE apply -input=false -auto-approve
   when: manual
@@ -84,11 +86,11 @@ network:destroy:
   stage: destroy
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$TF_DIR:/workspace" -w /workspace
+        -v "$NETWORK_HOST_DIR:/workspace" -w $NETWORK_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         $TF_IMAGE init -input=false -reconfigure
     - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$TF_DIR:/workspace" -w /workspace
+        -v "$NETWORK_HOST_DIR:/workspace" -w $NETWORK_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         $TF_IMAGE destroy -input=false -auto-approve
   when: manual
