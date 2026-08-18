@@ -1,6 +1,6 @@
 variables:
   TF_IMAGE: "hashicorp/terraform:1.9"
-  # Mount the entire cluster/ dir so relative module paths (../../modules/...) resolve correctly
+  # Mount the entire cluster/ dir so relative module paths resolve correctly
   CLUSTER_HOST_DIR: "$CI_PROJECT_DIR/cluster"
   CLUSTER_TF_WORKDIR: "/workspace/ecs_cluster_main"
 
