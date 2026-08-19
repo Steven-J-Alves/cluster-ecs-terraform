@@ -1,5 +1,3 @@
-# Variables for the prod environment
-
 variable "aws_region" {
   type    = string
   default = "us-east-1"
@@ -8,6 +6,21 @@ variable "aws_region" {
 variable "environment_name" {
   type    = string
   default = "prod"
+}
+
+variable "tag_service" {
+  type    = string
+  default = "Cluster-Main"
+}
+
+variable "tag_owner" {
+  type    = string
+  default = "KrioluKloud"
+}
+
+variable "tag_costcenter" {
+  type    = string
+  default = "KrioluKloud"
 }
 
 variable "vpc_cidr" {

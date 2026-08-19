@@ -1,4 +1,4 @@
-# ------- Terraform + Backend -------
+# ------- Terraform -------
 terraform {
   required_version = ">= 1.0"
 
@@ -7,13 +7,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-  }
-
-  backend "s3" {
-    bucket         = "kriolu-kloud-terraform-tfstates"
-    region         = "us-east-1"
-    key            = "cluster-terraform/prod/kriolu-kloud-cluster-us-east-1.tfstate"
-    dynamodb_table = "kriolu-kloud-cluster-terraform-lock"
   }
 }
 

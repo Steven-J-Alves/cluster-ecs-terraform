@@ -2,7 +2,7 @@ variables:
   TF_IMAGE: "hashicorp/terraform:1.9"
   # Mount the entire repo so relative module paths resolve correctly
   REPO_HOST_DIR: "$CI_PROJECT_DIR"
-  APPS_TF_WORKDIR: "/workspace/apps/app"
+  APPS_TF_WORKDIR: "/workspace/apps/environments/prod"
 
 stages:
   - validate
@@ -44,7 +44,7 @@ apps:plan:
         $TF_IMAGE plan -input=false -out=tfplan
   artifacts:
     paths:
-      - apps/app/tfplan
+      - apps/environments/prod/tfplan
     expire_in: 1 day
   rules:
     - if: $CI_PIPELINE_SOURCE == "push"

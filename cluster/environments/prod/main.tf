@@ -15,6 +15,19 @@ terraform {
   }
 }
 
+provider "aws" {
+  region = var.aws_region
+
+  default_tags {
+    tags = {
+      Environment = var.environment_name
+      Service     = var.tag_service
+      Owner       = var.tag_owner
+      CostCenter  = var.tag_costcenter
+    }
+  }
+}
+
 module "prod_ecs_cluster_main" {
   source = "../../ecs_cluster_main"
 

@@ -1,8 +1,8 @@
 variables:
   TF_IMAGE: "hashicorp/terraform:1.9"
-  # Mount the entire cluster/ dir so relative module paths resolve correctly
-  CLUSTER_HOST_DIR: "$CI_PROJECT_DIR/cluster"
-  CLUSTER_TF_WORKDIR: "/workspace/ecs_cluster_main"
+  # Mount the entire repo so relative module paths to root modules/ resolve correctly
+  CLUSTER_HOST_DIR: "$CI_PROJECT_DIR"
+  CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/prod"
 
 stages:
   - validate
@@ -40,7 +40,7 @@ cluster:plan:
         $TF_IMAGE plan -input=false -out=tfplan
   artifacts:
     paths:
-      - cluster/ecs_cluster_main/tfplan
+      - cluster/environments/prod/tfplan
     expire_in: 1 day
   rules:
     - if: $CI_PIPELINE_SOURCE == "push"

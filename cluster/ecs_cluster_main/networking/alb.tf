@@ -1,6 +1,6 @@
 # ------- Creating Server Public ALB -------
 module "alb_public" {
-  source     = "../../modules/alb"
+  source     = "../../../modules/alb"
   create_alb = true
   # enable_http    = true 
   name            = "${var.base_name}-public"
@@ -12,7 +12,7 @@ module "alb_public" {
 
 # ------- Creating Server Private ALB -------
 module "alb_private" {
-  source     = "../../modules/alb"
+  source     = "../../../modules/alb"
   create_alb = true
   internal   = true
   # enable_http    = true

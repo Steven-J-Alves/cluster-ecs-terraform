@@ -17,6 +17,15 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
+
+  default_tags {
+    tags = {
+      Environment = var.environment_name
+      Service     = var.tag_service
+      Owner       = var.tag_owner
+      CostCenter  = var.tag_costcenter
+    }
+  }
 }
 
 module "prod_app" {
@@ -27,7 +36,6 @@ module "prod_app" {
   environment_name = var.environment_name
   gitlab_branch    = var.gitlab_branch
 
-  vpc_id   = var.vpc_id
   vpc_cidr = var.vpc_cidr
 
   subnet_public_filter  = var.subnet_public_filter
