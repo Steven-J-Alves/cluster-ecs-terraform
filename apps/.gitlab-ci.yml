@@ -7,6 +7,7 @@ variables:
   # Mount the entire repo so relative module paths resolve correctly
   REPO_HOST_DIR: "$CI_PROJECT_DIR"
   APPS_TF_WORKDIR: "/workspace/apps/environments/prod"
+  APPS2_TF_WORKDIR: "/workspace/apps/environments/prod-app2"
 
 stages:
   - validate
@@ -97,6 +98,103 @@ apps:destroy:
         $TF_IMAGE init -input=false -reconfigure
     - docker run --rm --user "$(id -u):$(id -g)"
         -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE destroy -input=false -auto-approve
+  when: manual
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - apps/**/*
+        - modules/**/*
+
+# ==========================================================================
+# APP2 — separate state, same cluster (apps/environments/prod-app2/)
+# ==========================================================================
+
+# ------- APP2 VALIDATE -------
+apps2:validate:
+  stage: validate
+  script:
+    - echo "Checking cluster state exists in S3..."
+    - aws s3 ls "s3://kriolu-kloud-terraform-tfstates/cluster-terraform/prod/" --region us-east-1 > /dev/null 2>&1 ||
+        { echo "ERROR: Cluster state not found. Run cluster:apply first."; exit 1; }
+    - echo "Cluster state found — OK"
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
+        $TF_IMAGE validate
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - apps/**/*
+        - modules/**/*
+
+# ------- APP2 PLAN -------
+apps2:plan:
+  stage: plan
+  script:
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE plan -input=false -out=tfplan
+  artifacts:
+    paths:
+      - apps/environments/prod-app2/tfplan
+    expire_in: 1 day
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps2:validate
+
+# ------- APP2 APPLY -------
+apps2:apply:
+  stage: apply
+  script:
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE apply -input=false -auto-approve
+  when: manual
+  allow_failure: false
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps2:plan
+
+# ------- APP2 DESTROY -------
+apps2:destroy:
+  stage: destroy
+  script:
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         -e TF_VAR_rds_db_password
         $TF_IMAGE destroy -input=false -auto-approve

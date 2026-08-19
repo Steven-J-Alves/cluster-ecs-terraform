@@ -17,3 +17,8 @@ output "apps_lock_table_name" {
   description = "DynamoDB lock table name for the apps stack"
   value       = aws_dynamodb_table.apps_lock.name
 }
+
+output "apps2_lock_table_name" {
+  description = "DynamoDB lock table name for the apps2 stack"
+  value       = aws_dynamodb_table.apps2_lock.name
+}
