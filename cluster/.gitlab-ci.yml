@@ -18,9 +18,7 @@ stages:
 cluster:validate:
   stage: validate
   script:
-    - echo "Checking network state exists in S3..."
-    - aws s3 ls "s3://kriolu-kloud-terraform-tfstates/network-terraform/prod/" --region us-east-1 > /dev/null 2>&1 ||
-        (echo "ERROR: Network state not found. Run network:apply first." && exit 1)
+    - if ! aws s3 ls "s3://kriolu-kloud-terraform-tfstates/network-terraform/prod/" --region us-east-1 > /dev/null 2>&1; then echo "ERROR - Network state not found. Run network:apply first."; exit 1; fi
     - echo "Network state found — OK"
     - docker run --rm --user "$(id -u):$(id -g)"
         -v "$CLUSTER_HOST_DIR:/workspace" -w $CLUSTER_TF_WORKDIR

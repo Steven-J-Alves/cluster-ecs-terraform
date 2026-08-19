@@ -19,9 +19,7 @@ stages:
 apps:validate:
   stage: validate
   script:
-    - echo "Checking cluster state exists in S3..."
-    - aws s3 ls "s3://kriolu-kloud-terraform-tfstates/cluster-terraform/prod/" --region us-east-1 > /dev/null 2>&1 ||
-        (echo "ERROR: Cluster state not found. Run cluster:apply first." && exit 1)
+    - if ! aws s3 ls "s3://kriolu-kloud-terraform-tfstates/cluster-terraform/prod/" --region us-east-1 > /dev/null 2>&1; then echo "ERROR - Cluster state not found. Run cluster:apply first."; exit 1; fi
     - echo "Cluster state found — OK"
     - docker run --rm --user "$(id -u):$(id -g)"
         -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
@@ -116,9 +114,7 @@ apps:destroy:
 apps2:validate:
   stage: validate
   script:
-    - echo "Checking cluster state exists in S3..."
-    - aws s3 ls "s3://kriolu-kloud-terraform-tfstates/cluster-terraform/prod/" --region us-east-1 > /dev/null 2>&1 ||
-        (echo "ERROR: Cluster state not found. Run cluster:apply first." && exit 1)
+    - if ! aws s3 ls "s3://kriolu-kloud-terraform-tfstates/cluster-terraform/prod/" --region us-east-1 > /dev/null 2>&1; then echo "ERROR - Cluster state not found. Run cluster:apply first."; exit 1; fi
     - echo "Cluster state found — OK"
     - docker run --rm --user "$(id -u):$(id -g)"
         -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
