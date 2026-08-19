@@ -156,3 +156,15 @@ variable "port_front_app" {
   default     = 80
 }
 
+variable "app_host" {
+  description = "Public hostname for the app frontend (used in Route53 + ALB listener rules)"
+  type        = string
+  default     = "app.kriolu-kloud.cv"
+}
+
+variable "app_api_host" {
+  description = "Private hostname for the app API (used in Route53 + ALB listener rules + API_URL env var)"
+  type        = string
+  default     = "app-api.kriolu-kloud.cv"
+}
+

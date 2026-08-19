@@ -19,7 +19,7 @@ module "workload_api" {
   type           = "http"
   container_name = var.container_name["app_api"]
   port           = var.port_api_app
-  host_header    = "app-api.kriolu-kloud.cv"
+  host_header    = var.app_api_host
 
   health_check_path    = "/health"
   health_check_matcher = "200-499"
@@ -49,7 +49,7 @@ module "workload_front" {
   type           = "http"
   container_name = var.container_name["app_front"]
   port           = var.port_front_app
-  host_header    = "app.kriolu-kloud.cv"
+  host_header    = var.app_host
 
   health_check_path    = "/health"
   health_check_matcher = "200-399"
@@ -66,13 +66,13 @@ module "workload_front" {
   allowed_cidrs        = local.platform_allowed_cidrs
   private_listener_arn = local.platform_private_listener_arn
   public_listener_arn  = local.platform_public_listener_arn
-  public_host_header   = "app.kriolu-kloud.cv"
+  public_host_header   = var.app_host
   execution_role_arn   = module.ecs_role.arn_role
   task_role_arn        = module.ecs_role.arn_role_ecs_task_role
   aws_region           = var.aws_region
 
   environment_vars = {
-    API_URL = "http://app-api.kriolu-kloud.cv"
+    API_URL = "http://${var.app_api_host}"
   }
 }
 
@@ -101,7 +101,7 @@ module "workload_worker" {
   aws_region         = var.aws_region
 
   environment_vars = {
-    API_URL = "http://app-api.kriolu-kloud.cv"
+    API_URL = "http://${var.app_api_host}"
   }
 }
 
@@ -128,7 +128,7 @@ module "workload_scheduler" {
   aws_region         = var.aws_region
 
   environment_vars = {
-    API_URL = "http://app-api.kriolu-kloud.cv"
+    API_URL = "http://${var.app_api_host}"
   }
 }
 
@@ -155,7 +155,7 @@ module "workload_manager" {
   aws_region         = var.aws_region
 
   environment_vars = {
-    API_URL = "http://app-api.kriolu-kloud.cv"
+    API_URL = "http://${var.app_api_host}"
   }
 }
 

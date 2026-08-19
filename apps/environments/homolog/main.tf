@@ -41,6 +41,9 @@ module "homolog_app" {
 
   subnet_public_filter  = var.subnet_public_filter
   subnet_private_filter = var.subnet_private_filter
+  iam_role_names        = var.iam_role_names
+  app_host              = var.app_host
+  app_api_host          = var.app_api_host
   rds_db_password       = var.rds_db_password
 }
 

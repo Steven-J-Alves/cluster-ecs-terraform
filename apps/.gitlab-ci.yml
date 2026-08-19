@@ -157,6 +157,19 @@ apps:homolog:apply:
   extends: .apps_apply
   variables:
     APPS_TF_WORKDIR: "/workspace/apps/environments/homolog"
+  before_script:
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        $TF_IMAGE state rm 'module.homolog_app.aws_route53_record.app_front' || true
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        $TF_IMAGE state rm 'module.homolog_app.aws_route53_record.app_api' || true
   rules:
     - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
       changes:

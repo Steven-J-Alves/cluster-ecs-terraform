@@ -30,17 +30,36 @@ variable "gitlab_branch" {
 
 variable "vpc_cidr" {
   type    = string
-  default = "10.221.0.0/16"
+  default = "10.220.0.0/16"
 }
 
 variable "subnet_public_filter" {
   type    = string
-  default = "*kriolu-kloud-homolog-vpc-public*"
+  default = "*kriolu-kloud-vpc-public*"
 }
 
 variable "subnet_private_filter" {
   type    = string
-  default = "*kriolu-kloud-homolog-vpc-private*"
+  default = "*kriolu-kloud-vpc-private*"
+}
+
+variable "iam_role_names" {
+  type = map(string)
+  default = {
+    devops        = "h-app-tf-devops-role"
+    ecs           = "h-app-tf-ecs-task-execution-role"
+    ecs_task_role = "h-app-tf-ecs-task-role"
+  }
+}
+
+variable "app_host" {
+  type    = string
+  default = "app-homolog.kriolu-kloud.cv"
+}
+
+variable "app_api_host" {
+  type    = string
+  default = "app-api-homolog.kriolu-kloud.cv"
 }
 
 variable "rds_db_password" {
