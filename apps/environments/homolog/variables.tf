@@ -54,12 +54,12 @@ variable "iam_role_names" {
 
 variable "app_host" {
   type    = string
-  default = "app-homolog.kriolu-kloud.cv"
+  default = "app-h.kriolu-kloud.cv"
 }
 
 variable "app_api_host" {
   type    = string
-  default = "app-api-homolog.kriolu-kloud.cv"
+  default = "app-api-h.kriolu-kloud.cv"
 }
 
 variable "rds_db_password" {
