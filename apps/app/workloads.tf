@@ -3,7 +3,7 @@ locals {
   platform_cluster_id                = data.terraform_remote_state.ecs_cluster_main.outputs.ecs_cluster_id
   platform_cluster_name              = data.terraform_remote_state.ecs_cluster_main.outputs.ecs_cluster_name
   platform_private_listener_arn      = data.terraform_remote_state.ecs_cluster_main.outputs.https_listener_arn_private
-  platform_private_http_listener_arn = data.terraform_remote_state.ecs_cluster_main.outputs.http_listener_arn_private
+  platform_private_http_listener_arn = try(data.terraform_remote_state.ecs_cluster_main.outputs.http_listener_arn_private, "")
   platform_public_listener_arn       = data.terraform_remote_state.ecs_cluster_main.outputs.https_listener_arn_public
   platform_allowed_cidrs             = [data.aws_vpc.crawler_vpc.cidr_block, var.kriolu_kloud_vpn]
   platform_private_subnets           = data.aws_subnets.private_subnets.ids

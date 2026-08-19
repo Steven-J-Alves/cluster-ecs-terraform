@@ -41,30 +41,3 @@ module "prod_ecs_cluster_main" {
   subnet_private_filter = var.subnet_private_filter
 }
 
-output "https_listener_arn_public" {
-  value = module.prod_ecs_cluster_main.https_listener_arn_public
-}
-
-output "https_listener_arn_private" {
-  value = module.prod_ecs_cluster_main.https_listener_arn_private
-}
-
-output "http_listener_arn_private" {
-  value = module.prod_ecs_cluster_main.http_listener_arn_private
-}
-
-output "alb_dns_public" {
-  value = module.prod_ecs_cluster_main.alb_dns_public
-}
-
-output "alb_dns_private" {
-  value = module.prod_ecs_cluster_main.alb_dns_private
-}
-
-output "ecs_cluster_id" {
-  value = module.prod_ecs_cluster_main.ecs_cluster_id
-}
-
-output "ecs_cluster_name" {
-  value = module.prod_ecs_cluster_main.ecs_cluster_name
-}

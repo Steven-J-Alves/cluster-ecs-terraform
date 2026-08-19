@@ -1,8 +1,3 @@
-output "service_discovery_namespace_id" {
-  description = "The ID of the Service Discovery Private DNS Namespace"
-  value       = module.prod_ecs_cluster_main.service_discovery_namespace_id
-}
-
 output "ecs_cluster" {
   value = module.prod_ecs_cluster_main.ecs_cluster
 }
@@ -47,4 +42,8 @@ output "https_listener_arn_private" {
 
 output "alb_dns_private" {
   value = module.prod_ecs_cluster_main.alb_dns_private
+}
+
+output "http_listener_arn_private" {
+  value = module.prod_ecs_cluster_main.http_listener_arn_private
 }
