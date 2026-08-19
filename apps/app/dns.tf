@@ -9,9 +9,10 @@ locals {
 }
 
 resource "aws_route53_record" "app_front" {
-  zone_id = data.aws_route53_zone.public.zone_id
-  name    = "app.kriolu-kloud.cv"
-  type    = "A"
+  zone_id         = data.aws_route53_zone.public.zone_id
+  name            = "app.kriolu-kloud.cv"
+  type            = "A"
+  allow_overwrite = true
 
   alias {
     name                   = local.public_alb_dns
