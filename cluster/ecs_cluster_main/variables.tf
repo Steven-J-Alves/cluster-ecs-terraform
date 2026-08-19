@@ -97,13 +97,6 @@ variable "ec2_key_name" {
   default     = "kriolu-kloud-key"
 }
 
-variable "ec2_public_key" {
-  description = "Public key material for the EC2 key pair used by ECS cluster nodes"
-  type        = string
-  # Public key (not secret) — extracted from kriolu-kloud-key.pem via ssh-keygen -y
-  default     = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDBSGU/LJpw0fsPanmi7ONgeL3RQvVTGgNTRLn6V4+09o7/lX1ViSKBXPL8KD+N4KZjZVrnPzgHttN7oDylqZILcqWzeeaJBDj6qsWY7yDPl0mz+c78pYRz7CkvEy2N2msHxh1BKlG5CXwmhQZYBWki8zzi0p8xV5iXOB7QUpIQrINQXhH65hDlytQwgvlfXuoYd99UCy4fwHeSYd9P9SLRNWiCz41WtOKWsgkY6PjOk7v1crWTDt36y0psdZtdAvVI8n85O2FFmJL1SIv1L8o89gWye2vTcL6gpZlxic8jaoqJDX1dKoRk4g4AONwlK3DVH9Hjnz4ndRWdYWEb61yp"
-}
-
 variable "namespace_name" {
   description = "AWS Cloud Map private DNS namespace name for service discovery"
   type        = string
