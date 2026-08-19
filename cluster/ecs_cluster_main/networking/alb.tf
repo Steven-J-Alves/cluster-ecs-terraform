@@ -12,11 +12,11 @@ module "alb_public" {
 
 # ------- Creating Server Private ALB -------
 module "alb_private" {
-  source     = "../../../modules/alb"
-  create_alb = true
-  internal   = true
-  # enable_http    = true
-  name            = "${var.base_name}-private"
+  source      = "../../../modules/alb"
+  create_alb  = true
+  internal    = true
+  enable_http = true
+  name        = "${var.base_name}-private"
   subnets         = var.data_private_subnets.ids
   security_group  = [var.data_sg_alb_private.id]
   ssl_policy      = "ELBSecurityPolicy-TLS13-1-2-2021-06"

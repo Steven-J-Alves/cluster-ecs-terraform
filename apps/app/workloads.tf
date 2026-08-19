@@ -1,11 +1,12 @@
 # Platform values resolved from remote state and data sources — shared across all workloads
 locals {
-  platform_cluster_id           = data.terraform_remote_state.ecs_cluster_main.outputs.ecs_cluster_id
-  platform_cluster_name         = data.terraform_remote_state.ecs_cluster_main.outputs.ecs_cluster_name
-  platform_private_listener_arn = data.terraform_remote_state.ecs_cluster_main.outputs.https_listener_arn_private
-  platform_public_listener_arn  = data.terraform_remote_state.ecs_cluster_main.outputs.https_listener_arn_public
-  platform_allowed_cidrs        = [data.aws_vpc.crawler_vpc.cidr_block, var.kriolu_kloud_vpn]
-  platform_private_subnets      = data.aws_subnets.private_subnets.ids
+  platform_cluster_id                = data.terraform_remote_state.ecs_cluster_main.outputs.ecs_cluster_id
+  platform_cluster_name              = data.terraform_remote_state.ecs_cluster_main.outputs.ecs_cluster_name
+  platform_private_listener_arn      = data.terraform_remote_state.ecs_cluster_main.outputs.https_listener_arn_private
+  platform_private_http_listener_arn = data.terraform_remote_state.ecs_cluster_main.outputs.http_listener_arn_private
+  platform_public_listener_arn       = data.terraform_remote_state.ecs_cluster_main.outputs.https_listener_arn_public
+  platform_allowed_cidrs             = [data.aws_vpc.crawler_vpc.cidr_block, var.kriolu_kloud_vpn]
+  platform_private_subnets           = data.aws_subnets.private_subnets.ids
 }
 
 # ------- HTTP workloads — get TG + listener rule on private ALB -------
@@ -28,15 +29,16 @@ module "workload_api" {
   cpu_target    = 90
   memory_target = 80
 
-  cluster_id           = local.platform_cluster_id
-  cluster_name         = local.platform_cluster_name
-  vpc_id               = data.aws_vpc.crawler_vpc.id
-  private_subnets      = local.platform_private_subnets
-  allowed_cidrs        = local.platform_allowed_cidrs
-  private_listener_arn = local.platform_private_listener_arn
-  execution_role_arn   = module.ecs_role.arn_role
-  task_role_arn        = module.ecs_role.arn_role_ecs_task_role
-  aws_region           = var.aws_region
+  cluster_id                = local.platform_cluster_id
+  cluster_name              = local.platform_cluster_name
+  vpc_id                    = data.aws_vpc.crawler_vpc.id
+  private_subnets           = local.platform_private_subnets
+  allowed_cidrs             = local.platform_allowed_cidrs
+  private_listener_arn      = local.platform_private_listener_arn
+  private_http_listener_arn = local.platform_private_http_listener_arn
+  execution_role_arn        = module.ecs_role.arn_role
+  task_role_arn             = module.ecs_role.arn_role_ecs_task_role
+  aws_region                = var.aws_region
 }
 
 module "workload_front" {

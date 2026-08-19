@@ -1,7 +1,8 @@
 locals {
-  is_http   = var.type == "http"
-  is_public = local.is_http && var.public_listener_arn != ""
-  full_name = "${var.app_name}-${var.name}"
+  is_http      = var.type == "http"
+  is_public    = local.is_http && var.public_listener_arn != ""
+  has_http_pvt = local.is_http && var.private_http_listener_arn != ""
+  full_name    = "${var.app_name}-${var.name}"
 }
 
 # ECR repository — one per workload, named after the workload
@@ -44,6 +45,24 @@ resource "aws_alb_listener_rule" "rule" {
   count        = local.is_http ? 1 : 0
   listener_arn = var.private_listener_arn
   priority     = var.alb_priority
+
+  action {
+    type             = "forward"
+    target_group_arn = module.target_group[0].arn_tg
+  }
+
+  condition {
+    host_header {
+      values = [var.host_header]
+    }
+  }
+}
+
+# Listener rule on the private ALB port 80 (HTTP) — for Node.js service-to-service calls
+resource "aws_alb_listener_rule" "rule_http" {
+  count        = local.has_http_pvt ? 1 : 0
+  listener_arn = var.private_http_listener_arn
+  priority     = null
 
   action {
     type             = "forward"

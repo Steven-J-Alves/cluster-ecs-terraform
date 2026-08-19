@@ -31,3 +31,7 @@ output "https_listener_arn_private" {
 output "alb_dns_private" {
   value = module.alb_private.dns_alb
 }
+
+output "http_listener_arn_private" {
+  value = module.alb_private.arn_listener
+}

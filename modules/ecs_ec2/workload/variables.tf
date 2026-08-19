@@ -142,6 +142,12 @@ variable "private_listener_arn" {
   default     = ""
 }
 
+variable "private_http_listener_arn" {
+  description = "Private ALB HTTP listener ARN — when set, creates a listener rule on port 80 (for internal Node.js service-to-service calls)"
+  type        = string
+  default     = ""
+}
+
 variable "execution_role_arn" {
   description = "ECS task execution role ARN"
   type        = string

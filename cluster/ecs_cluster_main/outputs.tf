@@ -53,3 +53,7 @@ output "ecs_cluster_name" {
   value       = module.ecs_clusters.ecs_cluster_name
   description = "ECS Cluster Name"
 }
+
+output "http_listener_arn_private" {
+  value = module.networking.http_listener_arn_private
+}
