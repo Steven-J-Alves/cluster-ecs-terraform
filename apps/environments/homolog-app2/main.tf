@@ -10,7 +10,7 @@ terraform {
   backend "s3" {
     bucket         = "kriolu-kloud-terraform-tfstates"
     region         = "us-east-1"
-    key            = "apps-terraform/prod/kriolu-kloud-app2-us-east-1.tfstate"
+    key            = "apps-terraform/homolog/kriolu-kloud-app2-us-east-1.tfstate"
     dynamodb_table = "kriolu-kloud-apps2-terraform-lock"
   }
 }
@@ -28,18 +28,20 @@ provider "aws" {
   }
 }
 
-module "prod_app2" {
+module "homolog_app2" {
   source = "../../app2"
 
   aws_region = var.aws_region
 
-  environment_name = var.environment_name
-  gitlab_branch    = var.gitlab_branch
+  environment_name    = var.environment_name
+  gitlab_branch       = var.gitlab_branch
+  cluster_environment = "homolog"
 
   vpc_cidr = var.vpc_cidr
 
   subnet_public_filter  = var.subnet_public_filter
   subnet_private_filter = var.subnet_private_filter
+  iam_role_names        = var.iam_role_names
   app2_host             = var.app2_host
   app2_api_host         = var.app2_api_host
   rds_db_password       = var.rds_db_password

@@ -19,7 +19,7 @@ module "workload_api" {
   type           = "http"
   container_name = var.container_name["app2_api"]
   port           = var.port_api_app
-  host_header    = "app2-api.kriolu-kloud.cv"
+  host_header    = var.app2_api_host
 
   health_check_path    = "/health"
   health_check_matcher = "200-499"
@@ -49,7 +49,7 @@ module "workload_front" {
   type           = "http"
   container_name = var.container_name["app2_front"]
   port           = var.port_front_app
-  host_header    = "app2.kriolu-kloud.cv"
+  host_header    = var.app2_host
 
   health_check_path    = "/health"
   health_check_matcher = "200-399"
@@ -60,7 +60,7 @@ module "workload_front" {
   memory_target = 80
 
   environment_vars = {
-    API_URL = "http://app2-api.kriolu-kloud.cv"
+    API_URL = "http://${var.app2_api_host}"
   }
 
   cluster_id           = local.platform_cluster_id
@@ -70,7 +70,7 @@ module "workload_front" {
   allowed_cidrs        = local.platform_allowed_cidrs
   private_listener_arn = local.platform_private_listener_arn
   public_listener_arn  = local.platform_public_listener_arn
-  public_host_header   = "app2.kriolu-kloud.cv"
+  public_host_header   = var.app2_host
   execution_role_arn   = module.ecs_role.arn_role
   task_role_arn        = module.ecs_role.arn_role_ecs_task_role
   aws_region           = var.aws_region
@@ -92,7 +92,7 @@ module "workload_worker" {
   memory_target = 80
 
   environment_vars = {
-    API_URL = "http://app2-api.kriolu-kloud.cv"
+    API_URL = "http://${var.app2_api_host}"
   }
 
   cluster_id         = local.platform_cluster_id
@@ -119,7 +119,7 @@ module "workload_scheduler" {
   memory_target = 80
 
   environment_vars = {
-    API_URL = "http://app2-api.kriolu-kloud.cv"
+    API_URL = "http://${var.app2_api_host}"
   }
 
   cluster_id         = local.platform_cluster_id
@@ -146,7 +146,7 @@ module "workload_manager" {
   memory_target = 80
 
   environment_vars = {
-    API_URL = "http://app2-api.kriolu-kloud.cv"
+    API_URL = "http://${var.app2_api_host}"
   }
 
   cluster_id         = local.platform_cluster_id

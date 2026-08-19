@@ -5,7 +5,7 @@ variable "aws_region" {
 
 variable "environment_name" {
   type    = string
-  default = "prod"
+  default = "homolog"
 }
 
 variable "tag_service" {
@@ -25,7 +25,7 @@ variable "tag_costcenter" {
 
 variable "gitlab_branch" {
   type    = string
-  default = "main"
+  default = "homolog"
 }
 
 variable "vpc_cidr" {
@@ -43,14 +43,23 @@ variable "subnet_private_filter" {
   default = "*kriolu-kloud-vpc-private*"
 }
 
+variable "iam_role_names" {
+  type = map(string)
+  default = {
+    devops        = "h-app2-tf-devops-role"
+    ecs           = "h-app2-tf-ecs-task-execution-role"
+    ecs_task_role = "h-app2-tf-ecs-task-role"
+  }
+}
+
 variable "app2_host" {
   type    = string
-  default = "app2.kriolu-kloud.cv"
+  default = "app2-h.kriolu-kloud.cv"
 }
 
 variable "app2_api_host" {
   type    = string
-  default = "app2-api.kriolu-kloud.cv"
+  default = "app2-api-h.kriolu-kloud.cv"
 }
 
 variable "rds_db_password" {

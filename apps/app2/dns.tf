@@ -10,7 +10,7 @@ locals {
 
 resource "aws_route53_record" "app2_front" {
   zone_id         = data.aws_route53_zone.public.zone_id
-  name            = "app2.kriolu-kloud.cv"
+  name            = var.app2_host
   type            = "A"
   allow_overwrite = true
 
@@ -23,7 +23,7 @@ resource "aws_route53_record" "app2_front" {
 
 resource "aws_route53_record" "app2_api" {
   zone_id         = data.aws_route53_zone.public.zone_id
-  name            = "app2-api.kriolu-kloud.cv"
+  name            = var.app2_api_host
   type            = "A"
   allow_overwrite = true
 
