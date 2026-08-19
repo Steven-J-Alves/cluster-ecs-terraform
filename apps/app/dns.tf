@@ -22,9 +22,10 @@ resource "aws_route53_record" "app_front" {
 }
 
 resource "aws_route53_record" "app_api" {
-  zone_id = data.aws_route53_zone.public.zone_id
-  name    = "app-api.kriolu-kloud.cv"
-  type    = "A"
+  zone_id         = data.aws_route53_zone.public.zone_id
+  name            = "app-api.kriolu-kloud.cv"
+  type            = "A"
+  allow_overwrite = true
 
   alias {
     name                   = local.private_alb_dns

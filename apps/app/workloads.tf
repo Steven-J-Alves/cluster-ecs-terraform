@@ -70,6 +70,10 @@ module "workload_front" {
   execution_role_arn   = module.ecs_role.arn_role
   task_role_arn        = module.ecs_role.arn_role_ecs_task_role
   aws_region           = var.aws_region
+
+  environment_vars = {
+    API_URL = "http://app-api.kriolu-kloud.cv"
+  }
 }
 
 # ------- Worker workloads — no ALB, no TG, no listener rule -------
@@ -95,6 +99,10 @@ module "workload_worker" {
   execution_role_arn = module.ecs_role.arn_role
   task_role_arn      = module.ecs_role.arn_role_ecs_task_role
   aws_region         = var.aws_region
+
+  environment_vars = {
+    API_URL = "http://app-api.kriolu-kloud.cv"
+  }
 }
 
 module "workload_scheduler" {
@@ -118,6 +126,10 @@ module "workload_scheduler" {
   execution_role_arn = module.ecs_role.arn_role
   task_role_arn      = module.ecs_role.arn_role_ecs_task_role
   aws_region         = var.aws_region
+
+  environment_vars = {
+    API_URL = "http://app-api.kriolu-kloud.cv"
+  }
 }
 
 module "workload_manager" {
@@ -141,5 +153,9 @@ module "workload_manager" {
   execution_role_arn = module.ecs_role.arn_role
   task_role_arn      = module.ecs_role.arn_role_ecs_task_role
   aws_region         = var.aws_region
+
+  environment_vars = {
+    API_URL = "http://app-api.kriolu-kloud.cv"
+  }
 }
 

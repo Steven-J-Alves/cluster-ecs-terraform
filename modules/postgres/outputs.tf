@@ -1,5 +1,20 @@
-# output "rds_primary_endpoint" {
-#   description = "Primary (writer) endpoint of the RDS PostgreSQL instance"
-#   value       = aws_db_instance.primary_instance.endpoint
-#   # value = replace(aws_db_instance.primary_instance.endpoint, ":5432", "")
-# }
+output "endpoint" {
+  description = "Writer endpoint of the Aurora PostgreSQL cluster"
+  value       = aws_rds_cluster.aurora_pg_cluster.endpoint
+}
+
+output "port" {
+  description = "Port of the Aurora PostgreSQL cluster"
+  value       = aws_rds_cluster.aurora_pg_cluster.port
+}
+
+output "database_name" {
+  description = "Database name"
+  value       = aws_rds_cluster.aurora_pg_cluster.database_name
+}
+
+output "master_username" {
+  description = "Master username"
+  value       = aws_rds_cluster.aurora_pg_cluster.master_username
+  sensitive   = true
+}

@@ -128,7 +128,7 @@ module "task_definition" {
   region             = var.aws_region
   container_port     = local.is_http ? tostring(var.port) : ""
   port_mappings      = local.is_http ? jsonencode([{ containerPort = var.port, hostPort = 0 }]) : "[]"
-  environment        = "[]"
+  environment        = jsonencode([for k, v in var.environment_vars : { name = k, value = v }])
 }
 
 # ECS service

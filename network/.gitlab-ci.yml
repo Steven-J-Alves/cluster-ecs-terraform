@@ -1,3 +1,7 @@
+# Apply order: network → cluster → apps
+# This is the first stack — no upstream dependency check needed.
+# Run network:apply before triggering cluster or apps pipelines.
+
 variables:
   TF_IMAGE: "hashicorp/terraform:1.9"
   # Mount the entire network/ dir so relative module paths resolve correctly

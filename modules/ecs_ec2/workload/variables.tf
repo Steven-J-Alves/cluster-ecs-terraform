@@ -162,3 +162,9 @@ variable "aws_region" {
   description = "AWS region"
   type        = string
 }
+
+variable "environment_vars" {
+  description = "Environment variables to inject into the container as a map of name=value pairs"
+  type        = map(string)
+  default     = {}
+}

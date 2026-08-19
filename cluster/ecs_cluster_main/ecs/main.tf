@@ -12,6 +12,6 @@ module "ecs_cluster_ec2" {
   associate_public_ip = false
 
   # arm64 Graviton — must be explicit (root module defaults are x86)
-  image_id      = "ami-02564a0a159a33ef6"
+  image_id      = data.aws_ssm_parameter.ecs_ami.value
   instance_type = "t4g.small"
 }

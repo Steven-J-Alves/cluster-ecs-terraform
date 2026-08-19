@@ -1,3 +1,7 @@
+# Apply order: network → cluster → apps
+# This pipeline requires network state to exist (run network:apply first).
+# The validate job checks for this automatically.
+
 variables:
   TF_IMAGE: "hashicorp/terraform:1.9"
   # Mount the entire repo so relative module paths to root modules/ resolve correctly
@@ -14,6 +18,10 @@ stages:
 cluster:validate:
   stage: validate
   script:
+    - echo "Checking network state exists in S3..."
+    - aws s3 ls "s3://kriolu-kloud-terraform-tfstates/network-terraform/prod/" --region us-east-1 > /dev/null 2>&1 ||
+        { echo "ERROR: Network state not found. Run network:apply first."; exit 1; }
+    - echo "Network state found — OK"
     - docker run --rm --user "$(id -u):$(id -g)"
         -v "$CLUSTER_HOST_DIR:/workspace" -w $CLUSTER_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
