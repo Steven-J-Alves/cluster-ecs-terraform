@@ -1,12 +1,10 @@
 # Apply order: network → cluster → apps
-# This pipeline requires network state to exist (run network:apply first).
-# The validate job checks for this automatically.
+# Branches: main → prod | homolog → homolog
+# Both environments share the same network stack (prod VPC).
 
 variables:
   TF_IMAGE: "hashicorp/terraform:1.9"
-  # Mount the entire repo so relative module paths to root modules/ resolve correctly
   CLUSTER_HOST_DIR: "$CI_PROJECT_DIR"
-  CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/prod"
 
 stages:
   - validate
@@ -14,8 +12,9 @@ stages:
   - apply
   - destroy
 
-# ------- VALIDATE -------
-cluster:validate:
+# ── Job templates (hidden) ────────────────────────────────────────────────────
+
+.cluster_validate:
   stage: validate
   script:
     - if ! aws s3 ls "s3://kriolu-kloud-terraform-tfstates/network-terraform/prod/" --region us-east-1 > /dev/null 2>&1; then echo "ERROR - Network state not found. Run network:apply first."; exit 1; fi
@@ -27,13 +26,8 @@ cluster:validate:
     - docker run --rm --user "$(id -u):$(id -g)"
         -v "$CLUSTER_HOST_DIR:/workspace" -w $CLUSTER_TF_WORKDIR
         $TF_IMAGE validate
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-      changes:
-        - cluster/**/*
 
-# ------- PLAN -------
-cluster:plan:
+.cluster_plan:
   stage: plan
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
@@ -44,19 +38,8 @@ cluster:plan:
         -v "$CLUSTER_HOST_DIR:/workspace" -w $CLUSTER_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         $TF_IMAGE plan -input=false -out=tfplan
-  artifacts:
-    paths:
-      - cluster/environments/prod/tfplan
-    expire_in: 1 day
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-      changes:
-        - cluster/**/*
-  needs:
-    - cluster:validate
 
-# ------- APPLY -------
-cluster:apply:
+.cluster_apply:
   stage: apply
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
@@ -69,15 +52,8 @@ cluster:apply:
         $TF_IMAGE apply -input=false -auto-approve
   when: manual
   allow_failure: false
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-      changes:
-        - cluster/**/*
-  needs:
-    - cluster:plan
 
-# ------- DESTROY -------
-cluster:destroy:
+.cluster_destroy:
   stage: destroy
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
@@ -89,8 +65,95 @@ cluster:destroy:
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         $TF_IMAGE destroy -input=false -auto-approve
   when: manual
+
+# ── PROD — main branch ────────────────────────────────────────────────────────
+
+cluster:validate:
+  extends: .cluster_validate
+  variables:
+    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/prod"
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
         - cluster/**/*
-# destroy prep
+
+cluster:plan:
+  extends: .cluster_plan
+  variables:
+    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/prod"
+  artifacts:
+    paths:
+      - cluster/environments/prod/tfplan
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+  needs:
+    - cluster:validate
+
+cluster:apply:
+  extends: .cluster_apply
+  variables:
+    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/prod"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+  needs:
+    - cluster:plan
+
+cluster:destroy:
+  extends: .cluster_destroy
+  variables:
+    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/prod"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+
+# ── HOMOLOG — homolog branch ──────────────────────────────────────────────────
+
+cluster:homolog:validate:
+  extends: .cluster_validate
+  variables:
+    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+
+cluster:homolog:plan:
+  extends: .cluster_plan
+  variables:
+    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/homolog"
+  artifacts:
+    paths:
+      - cluster/environments/homolog/tfplan
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+  needs:
+    - cluster:homolog:validate
+
+cluster:homolog:apply:
+  extends: .cluster_apply
+  variables:
+    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+  needs:
+    - cluster:homolog:plan
+
+cluster:homolog:destroy:
+  extends: .cluster_destroy
+  variables:
+    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*

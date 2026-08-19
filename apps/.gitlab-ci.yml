@@ -1,13 +1,10 @@
 # Apply order: network → cluster → apps
-# This pipeline requires cluster state to exist (run cluster:apply first).
-# The validate job checks for this automatically.
+# Branches: main → prod | homolog → homolog
+# apps2 is prod-only (no homolog environment yet).
 
 variables:
   TF_IMAGE: "hashicorp/terraform:1.9"
-  # Mount the entire repo so relative module paths resolve correctly
   REPO_HOST_DIR: "$CI_PROJECT_DIR"
-  APPS_TF_WORKDIR: "/workspace/apps/environments/prod"
-  APPS2_TF_WORKDIR: "/workspace/apps/environments/prod-app2"
 
 stages:
   - validate
@@ -15,11 +12,12 @@ stages:
   - apply
   - destroy
 
-# ------- VALIDATE -------
-apps:validate:
+# ── Job templates (hidden) ────────────────────────────────────────────────────
+
+.apps_validate:
   stage: validate
   script:
-    - if ! aws s3 ls "s3://kriolu-kloud-terraform-tfstates/cluster-terraform/prod/" --region us-east-1 > /dev/null 2>&1; then echo "ERROR - Cluster state not found. Run cluster:apply first."; exit 1; fi
+    - if ! aws s3 ls "s3://kriolu-kloud-terraform-tfstates/cluster-terraform/${CLUSTER_STATE_ENV}/" --region us-east-1 > /dev/null 2>&1; then echo "ERROR - Cluster state not found. Run cluster:apply first."; exit 1; fi
     - echo "Cluster state found — OK"
     - docker run --rm --user "$(id -u):$(id -g)"
         -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
@@ -29,14 +27,8 @@ apps:validate:
     - docker run --rm --user "$(id -u):$(id -g)"
         -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
         $TF_IMAGE validate
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-      changes:
-        - apps/**/*
-        - modules/**/*
 
-# ------- PLAN -------
-apps:plan:
+.apps_plan:
   stage: plan
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
@@ -49,154 +41,189 @@ apps:plan:
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         -e TF_VAR_rds_db_password
         $TF_IMAGE plan -input=false -out=tfplan
+
+.apps_apply:
+  stage: apply
+  script:
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE apply -input=false -auto-approve
+  when: manual
+  allow_failure: false
+
+.apps_destroy:
+  stage: destroy
+  script:
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE init -input=false -reconfigure
+    - docker run --rm --user "$(id -u):$(id -g)"
+        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
+        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
+        -e TF_VAR_rds_db_password
+        $TF_IMAGE destroy -input=false -auto-approve
+  when: manual
+
+# ── PROD — main branch ────────────────────────────────────────────────────────
+
+apps:validate:
+  extends: .apps_validate
+  variables:
+    APPS_TF_WORKDIR: "/workspace/apps/environments/prod"
+    CLUSTER_STATE_ENV: "prod"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+
+apps:plan:
+  extends: .apps_plan
+  variables:
+    APPS_TF_WORKDIR: "/workspace/apps/environments/prod"
   artifacts:
     paths:
       - apps/environments/prod/tfplan
     expire_in: 1 day
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
         - apps/**/*
         - modules/**/*
   needs:
     - apps:validate
 
-# ------- APPLY -------
 apps:apply:
-  stage: apply
-  script:
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE apply -input=false -auto-approve
-  when: manual
-  allow_failure: false
+  extends: .apps_apply
+  variables:
+    APPS_TF_WORKDIR: "/workspace/apps/environments/prod"
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
         - apps/**/*
         - modules/**/*
   needs:
     - apps:plan
 
-# ------- DESTROY -------
 apps:destroy:
-  stage: destroy
-  script:
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE destroy -input=false -auto-approve
-  when: manual
+  extends: .apps_destroy
+  variables:
+    APPS_TF_WORKDIR: "/workspace/apps/environments/prod"
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+
+# ── HOMOLOG — homolog branch ──────────────────────────────────────────────────
+
+apps:homolog:validate:
+  extends: .apps_validate
+  variables:
+    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog"
+    CLUSTER_STATE_ENV: "homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+
+apps:homolog:plan:
+  extends: .apps_plan
+  variables:
+    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog"
+  artifacts:
+    paths:
+      - apps/environments/homolog/tfplan
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps:homolog:validate
+
+apps:homolog:apply:
+  extends: .apps_apply
+  variables:
+    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps:homolog:plan
+
+apps:homolog:destroy:
+  extends: .apps_destroy
+  variables:
+    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
       changes:
         - apps/**/*
         - modules/**/*
 
 # ==========================================================================
-# APP2 — separate state, same cluster (apps/environments/prod-app2/)
+# APP2 — prod only (homolog environment not yet configured)
 # ==========================================================================
 
-# ------- APP2 VALIDATE -------
 apps2:validate:
-  stage: validate
-  script:
-    - if ! aws s3 ls "s3://kriolu-kloud-terraform-tfstates/cluster-terraform/prod/" --region us-east-1 > /dev/null 2>&1; then echo "ERROR - Cluster state not found. Run cluster:apply first."; exit 1; fi
-    - echo "Cluster state found — OK"
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
-        $TF_IMAGE validate
+  extends: .apps_validate
+  variables:
+    APPS_TF_WORKDIR: "/workspace/apps/environments/prod-app2"
+    CLUSTER_STATE_ENV: "prod"
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
         - apps/**/*
         - modules/**/*
 
-# ------- APP2 PLAN -------
 apps2:plan:
-  stage: plan
-  script:
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE plan -input=false -out=tfplan
+  extends: .apps_plan
+  variables:
+    APPS_TF_WORKDIR: "/workspace/apps/environments/prod-app2"
   artifacts:
     paths:
       - apps/environments/prod-app2/tfplan
     expire_in: 1 day
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
         - apps/**/*
         - modules/**/*
   needs:
     - apps2:validate
 
-# ------- APP2 APPLY -------
 apps2:apply:
-  stage: apply
-  script:
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE apply -input=false -auto-approve
-  when: manual
-  allow_failure: false
+  extends: .apps_apply
+  variables:
+    APPS_TF_WORKDIR: "/workspace/apps/environments/prod-app2"
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
         - apps/**/*
         - modules/**/*
   needs:
     - apps2:plan
 
-# ------- APP2 DESTROY -------
 apps2:destroy:
-  stage: destroy
-  script:
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS2_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE destroy -input=false -auto-approve
-  when: manual
+  extends: .apps_destroy
+  variables:
+    APPS_TF_WORKDIR: "/workspace/apps/environments/prod-app2"
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
         - apps/**/*
         - modules/**/*
