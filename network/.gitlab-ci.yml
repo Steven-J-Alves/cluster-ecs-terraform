@@ -1,10 +1,8 @@
 # Apply order: network → cluster → apps
-# This is the first stack — no upstream dependency check needed.
-# Run network:apply before triggering cluster or apps pipelines.
+# Network is prod-only (shared VPC). Only runs on main branch.
 
 variables:
   TF_IMAGE: "hashicorp/terraform:1.9"
-  # Mount the entire network/ dir so relative module paths resolve correctly
   NETWORK_HOST_DIR: "$CI_PROJECT_DIR/network"
   NETWORK_TF_WORKDIR: "/workspace/environments/prod"
 
@@ -14,19 +12,9 @@ stages:
   - apply
   - destroy
 
-# Macro: docker run com user do runner para evitar ficheiros root-owned
-.tf_run: &tf_run >-
-  docker run --rm
-  --user "$(id -u):$(id -g)"
-  -v "$NETWORK_HOST_DIR:/workspace"
-  -w $NETWORK_TF_WORKDIR
-  -e AWS_ACCESS_KEY_ID
-  -e AWS_SECRET_ACCESS_KEY
-  -e AWS_DEFAULT_REGION
-  $TF_IMAGE
+# ── Job templates (hidden) ────────────────────────────────────────────────────
 
-# ------- VALIDATE -------
-network:validate:
+.network_validate:
   stage: validate
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
@@ -36,13 +24,8 @@ network:validate:
     - docker run --rm --user "$(id -u):$(id -g)"
         -v "$NETWORK_HOST_DIR:/workspace" -w $NETWORK_TF_WORKDIR
         $TF_IMAGE validate
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-      changes:
-        - network/**/*
 
-# ------- PLAN -------
-network:plan:
+.network_plan:
   stage: plan
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
@@ -53,19 +36,8 @@ network:plan:
         -v "$NETWORK_HOST_DIR:/workspace" -w $NETWORK_TF_WORKDIR
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         $TF_IMAGE plan -input=false -out=tfplan
-  artifacts:
-    paths:
-      - network/environments/prod/tfplan
-    expire_in: 1 day
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-      changes:
-        - network/**/*
-  needs:
-    - network:validate
 
-# ------- APPLY -------
-network:apply:
+.network_apply:
   stage: apply
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
@@ -78,15 +50,8 @@ network:apply:
         $TF_IMAGE apply -input=false -auto-approve
   when: manual
   allow_failure: false
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-      changes:
-        - network/**/*
-  needs:
-    - network:plan
 
-# ------- DESTROY -------
-network:destroy:
+.network_destroy:
   stage: destroy
   script:
     - docker run --rm --user "$(id -u):$(id -g)"
@@ -98,7 +63,41 @@ network:destroy:
         -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
         $TF_IMAGE destroy -input=false -auto-approve
   when: manual
+
+# ── PROD — main branch only ───────────────────────────────────────────────────
+
+network:validate:
+  extends: .network_validate
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - network/**/*
+
+network:plan:
+  extends: .network_plan
+  artifacts:
+    paths:
+      - network/environments/prod/tfplan
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - network/**/*
+  needs:
+    - network:validate
+
+network:apply:
+  extends: .network_apply
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - network/**/*
+  needs:
+    - network:plan
+
+network:destroy:
+  extends: .network_destroy
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
         - network/**/*
