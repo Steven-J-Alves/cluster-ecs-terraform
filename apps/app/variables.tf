@@ -126,6 +126,12 @@ variable "rds_db_password" {
   sensitive   = true
 }
 
+variable "cluster_environment" {
+  description = "Environment name of the cluster stack to read remote state from (prod or homolog)"
+  type        = string
+  default     = "prod"
+}
+
 variable "port_api_app" {
   description = "Port exposed by the app-api container"
   type        = number

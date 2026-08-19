@@ -33,8 +33,9 @@ module "homolog_app" {
 
   aws_region = var.aws_region
 
-  environment_name = var.environment_name
-  gitlab_branch    = var.gitlab_branch
+  environment_name    = var.environment_name
+  gitlab_branch       = var.gitlab_branch
+  cluster_environment = "homolog"
 
   vpc_cidr = var.vpc_cidr
 
