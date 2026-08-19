@@ -40,3 +40,4 @@ module "homolog_ecs_cluster_main" {
   subnet_public_filter  = var.subnet_public_filter
   subnet_private_filter = var.subnet_private_filter
 }
+

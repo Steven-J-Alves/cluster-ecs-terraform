@@ -43,3 +43,4 @@ module "homolog_app" {
   subnet_private_filter = var.subnet_private_filter
   rds_db_password       = var.rds_db_password
 }
+
