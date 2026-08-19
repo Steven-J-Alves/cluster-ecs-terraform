@@ -25,15 +25,20 @@ variable "tag_costcenter" {
 
 variable "vpc_cidr" {
   type    = string
-  default = "10.221.0.0/16"
+  default = "10.220.0.0/16"
 }
 
 variable "subnet_public_filter" {
   type    = string
-  default = "*kriolu-kloud-homolog-vpc-public*"
+  default = "*kriolu-kloud-vpc-public*"
 }
 
 variable "subnet_private_filter" {
   type    = string
-  default = "*kriolu-kloud-homolog-vpc-private*"
+  default = "*kriolu-kloud-vpc-private*"
+}
+
+variable "namespace_name" {
+  type    = string
+  default = "kriolu-kloud-homolog.local"
 }
