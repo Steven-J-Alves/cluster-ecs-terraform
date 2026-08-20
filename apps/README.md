@@ -1,84 +1,200 @@
-# Palos-services-ecs
+# apps/ — ECS Workloads
 
+Terraform stack that deploys all ECS services (workloads) for a given application. Depends on `cluster/` outputs (cluster ID, ALB listener ARNs) via remote state.
 
+See `apps/arch.drawio` for the full service communication diagram.
 
-## Getting started
+---
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Structure
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+```
+apps/
+├── arch.drawio              ← service communication diagram
+├── app/                     ← app module (app-front, app-api, workers)
+│   ├── workloads.tf         ← one module "workload" block per service
+│   ├── main.tf              ← Aurora PostgreSQL cluster
+│   ├── dns.tf               ← Route53 A alias records
+│   ├── iam.tf               ← ECS execution role + task role
+│   ├── data.tf              ← remote state + data source lookups
+│   ├── locals.tf            ← base_name = "{env[0]}-app"
+│   └── variables.tf
+├── app2/                    ← identical pattern, second application
+│   └── (same files as app/)
+└── environments/
+    ├── prod/                ← prod-app backend config + module call
+    ├── prod-app2/           ← prod-app2 backend config + module call
+    ├── homolog/             ← homolog-app backend config + module call
+    └── homolog-app2/        ← homolog-app2 backend config + module call
+```
 
-## Add your files
+---
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## Workloads per app
 
-## Integrate with your tools
+### app (prod: `p-app-*`, homolog: `h-app-*`)
 
-## Collaborate with your team
+| Service | Type | Port | Host header | Public? | Autoscaling |
+|---|---|---|---|---|---|
+| `app-front` | http | 80 | `app.kriolu-kloud.cv` | Yes (ALB Public) | 1–3 tasks |
+| `app-api` | http | 4004 | `app-api.kriolu-kloud.cv` | No (ALB Private only) | 1–15 tasks |
+| `app-worker` | worker | — | — | No | 1–15 tasks |
+| `app-scheduler` | worker | — | — | No | 1–8 tasks |
+| `app-manager` | worker | — | — | No | 1–3 tasks |
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+### app2 (prod: `p-app2-*`, homolog: `h-app2-*`)
 
-## Test and Deploy
+Same pattern as `app` with its own host headers and separate Aurora cluster.
 
-Use the built-in continuous integration in GitLab.
+---
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+## DNS records (Route53)
 
-***
+| Record | Points to | Purpose |
+|---|---|---|
+| `app.kriolu-kloud.cv` (prod) | ALB Public DNS (A alias) | Browser entry point |
+| `app-api.kriolu-kloud.cv` (prod) | ALB Private DNS (A alias) | Internal API — Nginx proxy + worker direct calls |
+| `app-h.kriolu-kloud.cv` (homolog) | ALB Public DNS | Homolog frontend |
+| `app-api-h.kriolu-kloud.cv` (homolog) | ALB Private DNS | Homolog API |
 
-# Editing this README
+---
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## Database
 
-## Suggestions for a good README
+Each app gets its own **Aurora PostgreSQL 17** cluster:
+- Instance class: `db.t4g.large`
+- DB name: `app` / `app2`
+- User: `app_user`
+- Placed in private subnets with `data-private-sg`
+- Password: `TF_VAR_rds_db_password` (never committed to git)
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+---
 
-## Name
-Choose a self-explaining name for your project.
+## Terraform backend
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+```hcl
+# prod / app
+backend "s3" {
+  bucket         = "kriolu-kloud-terraform-tfstates"
+  key            = "apps-terraform/prod/kriolu-kloud-app-us-east-1.tfstate"
+  dynamodb_table = "kriolu-kloud-apps-terraform-lock"
+}
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+# prod / app2
+backend "s3" {
+  bucket         = "kriolu-kloud-terraform-tfstates"
+  key            = "apps-terraform/prod-app2/kriolu-kloud-app2-us-east-1.tfstate"
+  dynamodb_table = "kriolu-kloud-apps2-terraform-lock"
+}
+```
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+---
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## How workloads consume the cluster
+
+`data.tf` reads from `cluster/` remote state to resolve all shared infrastructure:
+
+```hcl
+data "terraform_remote_state" "ecs_cluster_main" {
+  backend = "s3"
+  config = {
+    bucket = "kriolu-kloud-terraform-tfstates"
+    key    = "cluster-terraform/{env}/kriolu-kloud-cluster-us-east-1.tfstate"
+    region = "us-east-1"
+  }
+}
+```
+
+Resolved values shared across all workloads in `workloads.tf`:
+- `platform_cluster_id` / `platform_cluster_name`
+- `platform_private_listener_arn` (HTTPS:443)
+- `platform_private_http_listener_arn` (HTTP:80 — for Node.js service-to-service)
+- `platform_public_listener_arn` (HTTPS:443 — only front gets this)
+- `platform_private_subnets`
+- `platform_allowed_cidrs` (VPC CIDR + optional VPN IP)
+
+---
+
+## Adding a new workload
+
+Edit `app/workloads.tf` and add one module block:
+
+```hcl
+module "workload_myservice" {
+  source = "../../modules/ecs_ec2/workload"
+
+  name           = "myservice"
+  app_name       = local.base_name
+  type           = "http"          # or "worker"
+  container_name = "myservice"
+  port           = 3000
+
+  host_header          = "myservice.kriolu-kloud.cv"
+  health_check_path    = "/health"
+  health_check_matcher = "200"
+
+  min_capacity  = 1
+  max_capacity  = 5
+  cpu_target    = 80
+  memory_target = 80
+
+  cluster_id           = local.platform_cluster_id
+  cluster_name         = local.platform_cluster_name
+  vpc_id               = data.aws_vpc.crawler_vpc.id
+  private_subnets      = local.platform_private_subnets
+  allowed_cidrs        = local.platform_allowed_cidrs
+  private_listener_arn = local.platform_private_listener_arn
+  execution_role_arn   = module.ecs_role.arn_role
+  task_role_arn        = module.ecs_role.arn_role_ecs_task_role
+  aws_region           = var.aws_region
+}
+```
+
+No changes needed to `cluster/`, `network/`, or `modules/`. One block = full workload.
+
+---
 
 ## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+```bash
+cd cluster-ecs-terraform/apps/environments/prod
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+export AWS_ACCESS_KEY_ID=<ci-apps-key>
+export AWS_SECRET_ACCESS_KEY=<ci-apps-secret>
+export AWS_DEFAULT_REGION=us-east-1
+export TF_VAR_rds_db_password=<db-password>
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+# Run via Docker
+docker run --rm --user "$(id -u):$(id -g)" \
+  -v "$(realpath ../..):/workspace" -w /workspace/environments/prod \
+  -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION \
+  -e TF_VAR_rds_db_password \
+  hashicorp/terraform:1.9 apply -auto-approve
+```
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+> Pre-requisite: `cluster/` must be applied first so the remote state output ARNs exist.
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+---
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+## CI Pipeline
 
-## License
-For open source projects, say how it is licensed.
+GitLab CI jobs (`.gitlab-ci.yml`):
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+| Job | Trigger | Action |
+|---|---|---|
+| `apps:validate` | push with changes under `apps/**` | `terraform init` + `terraform validate` |
+| `apps:plan` | after validate | `terraform plan -out=tfplan` |
+| `apps:apply` | **manual** | `terraform apply -auto-approve` |
+| `apps:destroy` | **manual** | `terraform destroy -auto-approve` |
+
+`TF_VAR_rds_db_password` is set as a protected/masked CI variable at the GitLab group level.
+
+---
+
+## Gotchas
+
+- **`TF_VAR_rds_db_password` must be set** or `terraform plan` fails — there is no default for the DB password.
+- **`platform_private_http_listener_arn` uses `try(..., "")`** — if the cluster was applied before the HTTP:80 listener was added, the output may not exist. Re-apply the cluster first, then re-apply apps.
+- **Workers use `API_URL = "http://${var.app_api_host}"`** — they call the API directly via the private ALB HTTP:80 listener, not through Nginx.
+- **app-front has both `private_listener_arn` and `public_listener_arn`** — it registers in two target groups (private + public ALB), so it's reachable both internally and from the internet.
+- **Route53 ALB zone ID is hardcoded** (`Z35SXDOTRQ7X7K`) — this is the fixed AWS zone ID for ALBs in `us-east-1`. Do not change it.
