@@ -1,0 +1,293 @@
+<mxfile host="app.diagrams.net" modified="2026-08-20" version="24.0" type="device">
+  <diagram id="service-comm-flow" name="Service Communication Flow">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1380" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- TITLE -->
+        <mxCell id="title" value="Service Communication — Nginx · ALB Public · ALB Private · ECS (prod app)" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=20;fontStyle=1;fontColor=#232F3E;" vertex="1" parent="1">
+          <mxGeometry x="300" y="12" width="1300" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- BROWSER -->
+        <mxCell id="browser" value="🌐 Browser / User" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="160" y="60" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ROUTE53 -->
+        <mxCell id="route53" value="Route 53 — kriolu-kloud.cv" style="swimlane;startSize=28;fontStyle=1;fontSize=12;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=#6929C4;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="185" width="530" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r53_rec1" value="A alias: app.kriolu-kloud.cv&#xa;→ p-ecs-cluster-main-public.elb.amazonaws.com" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE7F6;strokeColor=#6929C4;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="100" y="220" width="240" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r53_rec2" value="A alias: app-api.kriolu-kloud.cv&#xa;→ p-ecs-cluster-main-private.elb.amazonaws.com" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EDE7F6;strokeColor=#6929C4;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="355" y="220" width="245" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ALB PUBLIC -->
+        <mxCell id="alb_pub" value="ALB Public — internet-facing" style="swimlane;startSize=28;fontStyle=1;fontSize=12;fillColor=#7AA116;fontColor=#ffffff;strokeColor=#5a7b10;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="355" width="370" height="185" as="geometry" />
+        </mxCell>
+
+        <mxCell id="alb_pub_l1" value="Listener: HTTPS :443&#xa;TLS termination (ACM *.kriolu-kloud.cv)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="45" y="390" width="250" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="alb_pub_rule" value="Rule: host = app.kriolu-kloud.cv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="45" y="450" width="250" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="alb_pub_tg" value="Target Group: p-app-front-pub (type: instance)&#xa;Health check: GET /health → HTTP 200, every 5s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="45" y="493" width="340" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- ALB PRIVATE -->
+        <mxCell id="alb_priv" value="ALB Private — internal" style="swimlane;startSize=28;fontStyle=1;fontSize=12;fillColor=#7AA116;fontColor=#ffffff;strokeColor=#5a7b10;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="690" y="355" width="440" height="185" as="geometry" />
+        </mxCell>
+
+        <mxCell id="alb_priv_l1" value="Listener: HTTPS :443  (TLS termination)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="705" y="390" width="270" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="alb_priv_l2" value="Listener: HTTP :80  (plain — for service-to-service)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="705" y="432" width="300" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="alb_priv_rule" value="Rule (both listeners): host = app-api.kriolu-kloud.cv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="705" y="474" width="305" height="28" as="geometry" />
+        </mxCell>
+
+        <mxCell id="alb_priv_tg" value="Target Group: p-app-api-pvt (type: instance) | HC: GET /health → 200, every 5s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="705" y="508" width="410" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- EC2 NODE (bridge mode) -->
+        <mxCell id="ec2_node" value="EC2 node — t4g.small arm64  (bridge network mode — hostPort=0 dynamic ephemeral port per container)" style="swimlane;startSize=28;fontStyle=3;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="605" width="1150" height="530" as="geometry" />
+        </mxCell>
+
+        <!-- FRONT CONTAINER (Nginx) -->
+        <mxCell id="front_box" value="container: p-app-front  |  Nginx :80  |  hostPort=0 (dynamic)" style="swimlane;startSize=28;fontStyle=1;fontSize=12;fillColor=#E7157B;fontColor=#ffffff;strokeColor=#c41162;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="55" y="653" width="500" height="460" as="geometry" />
+        </mxCell>
+
+        <mxCell id="nginx_label" value="nginx.conf  (rendered from default.conf.template at container startup)" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontStyle=2;fontColor=#555;" vertex="1" parent="1">
+          <mxGeometry x="70" y="690" width="470" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="nginx_health" value="location /health {&#xa;    return 200 &apos;{&quot;status&quot;:&quot;healthy&quot;}&apos;;&#xa;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999;fontSize=11;fontFamily=Courier New;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="70" y="717" width="470" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="nginx_api" value="location /api/ {&#xa;    proxy_pass ${API_URL}/;          # http://app-api.kriolu-kloud.cv/&#xa;    proxy_set_header Host app-api.kriolu-kloud.cv;&#xa;    proxy_set_header X-Real-IP $remote_addr;&#xa;    proxy_read_timeout 10s;&#xa;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontFamily=Courier New;align=left;spacingLeft=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="784" width="470" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="nginx_static" value="location / {&#xa;    root /usr/share/nginx/html;&#xa;    index index.html;    # static SPA&#xa;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999;fontSize=11;fontFamily=Courier New;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="70" y="891" width="470" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="nginx_env" value="ENV  API_URL = http://app-api.kriolu-kloud.cv&#xa;(injected by Terraform → ECS task definition environment_vars)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="70" y="960" width="470" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="nginx_image" value="FROM nginx:alpine  |  EXPOSE 80" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999;fontSize=11;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1013" width="470" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- API CONTAINER (Node.js) -->
+        <mxCell id="api_box" value="container: p-app-api  |  Node.js :4004  |  hostPort=0 (dynamic)" style="swimlane;startSize=28;fontStyle=1;fontSize=12;fillColor=#E7157B;fontColor=#ffffff;strokeColor=#c41162;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="653" width="555" height="460" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api_routes_label" value="HTTP routes  (server.js — Node.js http.createServer)" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=11;fontStyle=2;fontColor=#555;" vertex="1" parent="1">
+          <mxGeometry x="615" y="690" width="525" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api_r1" value="GET  /health          → 200 {status:&quot;healthy&quot;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontFamily=Courier New;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="615" y="717" width="525" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api_r2" value="GET  /                → 200 {app:&quot;app-api&quot;, tasks: N}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999;fontSize=11;fontFamily=Courier New;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="615" y="756" width="525" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api_r3" value="GET  /tasks           → 200 [all tasks]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999;fontSize=11;fontFamily=Courier New;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="615" y="795" width="525" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api_r4" value="POST /tasks           → 201  {id, type, status:&quot;pending&quot;, createdAt}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontFamily=Courier New;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="615" y="834" width="525" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api_r5" value="GET  /tasks/pending   → 200 task (status: pending→processing) | 404" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontFamily=Courier New;align=left;spacingLeft=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="615" y="873" width="525" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api_r6" value="PATCH /tasks/:id      → 200  update status field" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontFamily=Courier New;align=left;spacingLeft=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="615" y="912" width="525" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api_storage" value="⚠  In-memory storage (tasks[] array) — not persisted across restarts or replicas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="615" y="952" width="525" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api_image" value="FROM node:20-alpine  |  EXPOSE 4004  |  CMD [&quot;node&quot;, &quot;src/server.js&quot;]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999;fontSize=11;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="615" y="995" width="525" height="28" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api_env2" value="PORT = 4004  (env var or hardcoded default)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="615" y="1030" width="525" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- WORKERS -->
+        <mxCell id="workers_box" value="Background workers — no ALB, no exposed port, no Nginx" style="swimlane;startSize=28;fontStyle=1;fontSize=12;fillColor=#525252;fontColor=#ffffff;strokeColor=#333333;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="605" width="650" height="530" as="geometry" />
+        </mxCell>
+
+        <mxCell id="worker_note" value="All workers: HTTP request to app-api.kriolu-kloud.cv:80&#xa;Route53 → ALB Private HTTP:80 → TG api → api container&#xa;No Nginx involved — direct from worker to ALB Private" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="1225" y="645" width="620" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="worker_c" value="p-app-worker  (Node.js — no port)" style="swimlane;startSize=24;fontStyle=1;fontSize=11;fillColor=#757575;fontColor=#ffffff;strokeColor=#333;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1225" y="720" width="620" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="worker_code" value="GET  http://app-api.kriolu-kloud.cv/tasks/pending  (poll every 10s)&#xa;  → picks next task (status: pending → processing)&#xa;  → simulates work (3s)&#xa;PATCH http://app-api.kriolu-kloud.cv/tasks/:id  {status:&quot;done&quot;}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999;fontSize=11;fontFamily=Courier New;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="1235" y="750" width="600" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="scheduler_c" value="p-app-scheduler  (Node.js — no port)" style="swimlane;startSize=24;fontStyle=1;fontSize=11;fillColor=#757575;fontColor=#ffffff;strokeColor=#333;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1225" y="858" width="620" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="scheduler_code" value="POST http://app-api.kriolu-kloud.cv/tasks  {type:&quot;scheduled&quot;, payload:{}}&#xa;  → creates tasks periodically for worker to process" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999;fontSize=11;fontFamily=Courier New;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="1235" y="885" width="600" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="manager_c" value="p-app-manager  (Node.js — no port)" style="swimlane;startSize=24;fontStyle=1;fontSize=11;fillColor=#757575;fontColor=#ffffff;strokeColor=#333;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1225" y="960" width="620" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="manager_code" value="GET  http://app-api.kriolu-kloud.cv/tasks    → monitor task queue&#xa;GET  http://app-api.kriolu-kloud.cv/         → health / stats" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999;fontSize=11;fontFamily=Courier New;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="1235" y="987" width="600" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="workers_env" value="ENV  API_URL = http://app-api.kriolu-kloud.cv  (all 3 — injected by Terraform workload module)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="1225" y="1062" width="620" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- NOTES -->
+        <mxCell id="bridge_note" value="Bridge mode: ECS assigns a random ephemeral port on the EC2 host (hostPort=0). The Target Group registers EC2_IP:ephemeralPort. The ALB forwards inbound traffic to that pair. The container always listens on its fixed containerPort (80 or 4004). Port mapping: containerPort → hostPort (dynamic)." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#f9a825;fontSize=11;fontStyle=2;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="30" y="1158" width="870" height="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tls_note" value="TLS: terminates at both ALBs. Internal calls (Nginx→ALB Private, Workers→ALB Private) use plain HTTP :80. The private ALB has a separate HTTP:80 listener specifically for service-to-service traffic so Node.js does not need to handle TLS." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#388e3c;fontSize=11;fontStyle=2;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="920" y="1158" width="940" height="48" as="geometry" />
+        </mxCell>
+
+        <!-- ARROWS -->
+
+        <!-- Browser → Route53 -->
+        <mxCell id="arr_br_r53" value="DNS query" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#d6b656;strokeWidth=2;fontSize=10;fontStyle=2;endArrow=block;endFill=1;" edge="1" source="browser" target="route53" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Route53 → ALB Public -->
+        <mxCell id="arr_r53_albpub" value="resolves" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#7AA116;strokeWidth=2;fontSize=10;endArrow=block;endFill=1;" edge="1" source="r53_rec1" target="alb_pub" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="220" y="315" />
+              <mxPoint x="220" y="355" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Route53 → ALB Private -->
+        <mxCell id="arr_r53_albpriv" value="resolves" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#7AA116;strokeWidth=2;fontSize=10;endArrow=block;endFill=1;" edge="1" source="r53_rec2" target="alb_priv" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="477" y="315" />
+              <mxPoint x="910" y="315" />
+              <mxPoint x="910" y="355" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ALB Public → front container -->
+        <mxCell id="arr_albpub_front" value="HTTPS:443 → TG front-pub&#xa;→ EC2:ephem → :80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#7AA116;strokeWidth=3;fontSize=10;fontStyle=1;endArrow=block;endFill=1;" edge="1" source="alb_pub" target="front_box" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="215" y="570" />
+              <mxPoint x="215" y="605" />
+              <mxPoint x="305" y="605" />
+              <mxPoint x="305" y="653" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Nginx proxy_pass → ALB Private -->
+        <mxCell id="arr_nginx_albpriv" value="/api/* proxy_pass&#xa;HTTP :80  Host: app-api.kriolu-kloud.cv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#E7157B;strokeWidth=3;fontSize=10;fontStyle=1;endArrow=block;endFill=1;" edge="1" source="nginx_api" target="alb_priv" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="555" y="834" />
+              <mxPoint x="630" y="834" />
+              <mxPoint x="630" y="490" />
+              <mxPoint x="910" y="490" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ALB Private → API container -->
+        <mxCell id="arr_albpriv_api" value="HTTP:80 → TG api-pvt&#xa;→ EC2:ephem → :4004" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#7AA116;strokeWidth=3;fontSize=10;fontStyle=1;endArrow=block;endFill=1;" edge="1" source="alb_priv" target="api_box" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="910" y="570" />
+              <mxPoint x="910" y="605" />
+              <mxPoint x="877" y="605" />
+              <mxPoint x="877" y="653" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Workers → ALB Private (direct HTTP, no Nginx) -->
+        <mxCell id="arr_worker_albpriv" value="HTTP :80 direct&#xa;(no Nginx)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#525252;strokeWidth=2;fontSize=10;fontStyle=1;endArrow=block;endFill=1;dashed=1;" edge="1" source="workers_box" target="alb_priv" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1210" y="820" />
+              <mxPoint x="1160" y="820" />
+              <mxPoint x="1160" y="448" />
+              <mxPoint x="1130" y="448" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Health check: ALB Public → front -->
+        <mxCell id="arr_hc_front" value="HC /health 5s" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#82b366;strokeWidth=1;fontSize=9;fontStyle=2;endArrow=open;endFill=0;dashed=1;" edge="1" source="alb_pub_tg" target="front_box" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="215" y="548" />
+              <mxPoint x="215" y="629" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Health check: ALB Private → api -->
+        <mxCell id="arr_hc_api" value="HC /health 5s" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#82b366;strokeWidth=1;fontSize=9;fontStyle=2;endArrow=open;endFill=0;dashed=1;" edge="1" source="alb_priv_tg" target="api_box" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="910" y="548" />
+              <mxPoint x="910" y="629" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
