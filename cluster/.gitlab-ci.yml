@@ -52,6 +52,7 @@ stages:
     - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$CLUSTER_TF_WORKDIR destroy -input=false -auto-approve
   when: manual
+  needs: []
 
 # ── PROD — main branch ────────────────────────────────────────────────────────
 
