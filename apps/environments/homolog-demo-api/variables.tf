@@ -25,7 +25,7 @@ variable "tag_service" {
 
 variable "tag_owner" {
   type    = string
-  default = "backend"
+  default = "platform"
 }
 
 variable "tag_costcenter" {
@@ -35,10 +35,10 @@ variable "tag_costcenter" {
 
 variable "port" {
   type    = number
-  default = 8080
+  default = 3000
 }
 
 variable "domain" {
   type    = string
-  default = "demo-api-h.kriolu-kloud.cv"
+  default = "demo-api.homolog.kriolu-kloud.cv"
 }
