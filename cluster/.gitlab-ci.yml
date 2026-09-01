@@ -2,10 +2,6 @@
 # Branches: main → prod | homolog → homolog
 # Both environments share the same network stack (prod VPC).
 
-variables:
-  TF_IMAGE: "hashicorp/terraform:1.9"
-  CLUSTER_HOST_DIR: "$CI_PROJECT_DIR"
-
 stages:
   - validate
   - plan
@@ -15,55 +11,38 @@ stages:
 # ── Job templates (hidden) ────────────────────────────────────────────────────
 
 .cluster_validate:
+  image: hashicorp/terraform:1.9
   stage: validate
+  before_script:
+    - apk add --no-cache aws-cli
   script:
     - if ! aws s3 ls "s3://kriolu-kloud-terraform-tfstates/network-terraform/prod/" --region us-east-1 > /dev/null 2>&1; then echo "ERROR - Network state not found. Run network:apply first."; exit 1; fi
     - echo "Network state found — OK"
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$CLUSTER_HOST_DIR:/workspace" -w $CLUSTER_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$CLUSTER_HOST_DIR:/workspace" -w $CLUSTER_TF_WORKDIR
-        $TF_IMAGE validate
+    - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$CLUSTER_TF_WORKDIR validate
 
 .cluster_plan:
+  image: hashicorp/terraform:1.9
   stage: plan
   script:
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$CLUSTER_HOST_DIR:/workspace" -w $CLUSTER_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$CLUSTER_HOST_DIR:/workspace" -w $CLUSTER_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        $TF_IMAGE plan -input=false -out=tfplan
+    - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$CLUSTER_TF_WORKDIR plan -input=false -out=tfplan
 
 .cluster_apply:
+  image: hashicorp/terraform:1.9
   stage: apply
   script:
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$CLUSTER_HOST_DIR:/workspace" -w $CLUSTER_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$CLUSTER_HOST_DIR:/workspace" -w $CLUSTER_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        $TF_IMAGE apply -input=false -auto-approve
+    - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$CLUSTER_TF_WORKDIR apply -input=false -auto-approve
   when: manual
   allow_failure: false
 
 .cluster_destroy:
+  image: hashicorp/terraform:1.9
   stage: destroy
   script:
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$CLUSTER_HOST_DIR:/workspace" -w $CLUSTER_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$CLUSTER_HOST_DIR:/workspace" -w $CLUSTER_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        $TF_IMAGE destroy -input=false -auto-approve
+    - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$CLUSTER_TF_WORKDIR destroy -input=false -auto-approve
   when: manual
 
 # ── PROD — main branch ────────────────────────────────────────────────────────
@@ -71,7 +50,7 @@ stages:
 cluster:validate:
   extends: .cluster_validate
   variables:
-    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/prod"
+    CLUSTER_TF_WORKDIR: "cluster/environments/prod"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -81,7 +60,7 @@ cluster:validate:
 cluster:plan:
   extends: .cluster_plan
   variables:
-    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/prod"
+    CLUSTER_TF_WORKDIR: "cluster/environments/prod"
   artifacts:
     paths:
       - cluster/environments/prod/tfplan
@@ -97,7 +76,7 @@ cluster:plan:
 cluster:apply:
   extends: .cluster_apply
   variables:
-    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/prod"
+    CLUSTER_TF_WORKDIR: "cluster/environments/prod"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -109,7 +88,7 @@ cluster:apply:
 cluster:destroy:
   extends: .cluster_destroy
   variables:
-    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/prod"
+    CLUSTER_TF_WORKDIR: "cluster/environments/prod"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -121,7 +100,7 @@ cluster:destroy:
 cluster:homolog:validate:
   extends: .cluster_validate
   variables:
-    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/homolog"
+    CLUSTER_TF_WORKDIR: "cluster/environments/homolog"
   rules:
     - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -131,7 +110,7 @@ cluster:homolog:validate:
 cluster:homolog:plan:
   extends: .cluster_plan
   variables:
-    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/homolog"
+    CLUSTER_TF_WORKDIR: "cluster/environments/homolog"
   artifacts:
     paths:
       - cluster/environments/homolog/tfplan
@@ -147,7 +126,7 @@ cluster:homolog:plan:
 cluster:homolog:apply:
   extends: .cluster_apply
   variables:
-    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/homolog"
+    CLUSTER_TF_WORKDIR: "cluster/environments/homolog"
   rules:
     - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -159,7 +138,7 @@ cluster:homolog:apply:
 cluster:homolog:destroy:
   extends: .cluster_destroy
   variables:
-    CLUSTER_TF_WORKDIR: "/workspace/cluster/environments/homolog"
+    CLUSTER_TF_WORKDIR: "cluster/environments/homolog"
   rules:
     - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
       changes:
