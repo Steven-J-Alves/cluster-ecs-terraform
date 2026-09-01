@@ -56,6 +56,7 @@ cluster:validate:
       changes:
         - cluster/**/*
         - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "web"'
 
 cluster:plan:
   extends: .cluster_plan
@@ -70,6 +71,7 @@ cluster:plan:
       changes:
         - cluster/**/*
         - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "web"'
   needs:
     - cluster:validate
 
@@ -82,6 +84,7 @@ cluster:apply:
       changes:
         - cluster/**/*
         - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "web"'
   needs:
     - cluster:plan
 
@@ -94,6 +97,7 @@ cluster:destroy:
       changes:
         - cluster/**/*
         - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "web"'
 
 # ── HOMOLOG — homolog branch ──────────────────────────────────────────────────
 
@@ -106,6 +110,7 @@ cluster:homolog:validate:
       changes:
         - cluster/**/*
         - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "web"'
 
 cluster:homolog:plan:
   extends: .cluster_plan
@@ -120,6 +125,7 @@ cluster:homolog:plan:
       changes:
         - cluster/**/*
         - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "web"'
   needs:
     - cluster:homolog:validate
 
@@ -132,6 +138,7 @@ cluster:homolog:apply:
       changes:
         - cluster/**/*
         - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "web"'
   needs:
     - cluster:homolog:plan
 
@@ -144,3 +151,4 @@ cluster:homolog:destroy:
       changes:
         - cluster/**/*
         - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "web"'
