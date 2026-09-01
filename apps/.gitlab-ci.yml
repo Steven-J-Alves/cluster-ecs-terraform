@@ -16,11 +16,7 @@ stages:
     entrypoint: [""]
   tags: [docker]
   stage: validate
-  before_script:
-    - apk add --no-cache aws-cli
   script:
-    - if ! aws s3 ls "s3://kriolu-kloud-terraform-tfstates/cluster-terraform/${CLUSTER_STATE_ENV}/" --region us-east-1 > /dev/null 2>&1; then echo "ERROR - Cluster state not found. Run cluster:apply first."; exit 1; fi
-    - echo "Cluster state found — OK"
     - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$APPS_TF_WORKDIR validate
 
