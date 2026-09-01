@@ -2,10 +2,6 @@
 # Branches: main → prod | homolog → homolog
 # apps2: prod (prod-app2) + homolog (homolog-app2).
 
-variables:
-  TF_IMAGE: "hashicorp/terraform:1.9"
-  REPO_HOST_DIR: "$CI_PROJECT_DIR"
-
 stages:
   - validate
   - plan
@@ -15,62 +11,38 @@ stages:
 # ── Job templates (hidden) ────────────────────────────────────────────────────
 
 .apps_validate:
+  image: hashicorp/terraform:1.9
   stage: validate
+  before_script:
+    - apk add --no-cache aws-cli
   script:
     - if ! aws s3 ls "s3://kriolu-kloud-terraform-tfstates/cluster-terraform/${CLUSTER_STATE_ENV}/" --region us-east-1 > /dev/null 2>&1; then echo "ERROR - Cluster state not found. Run cluster:apply first."; exit 1; fi
     - echo "Cluster state found — OK"
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
-        $TF_IMAGE validate
+    - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$APPS_TF_WORKDIR validate
 
 .apps_plan:
+  image: hashicorp/terraform:1.9
   stage: plan
   script:
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE plan -input=false -out=tfplan
+    - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$APPS_TF_WORKDIR plan -input=false -out=tfplan
 
 .apps_apply:
+  image: hashicorp/terraform:1.9
   stage: apply
   script:
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE apply -input=false -auto-approve
+    - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$APPS_TF_WORKDIR apply -input=false -auto-approve
   when: manual
   allow_failure: false
 
 .apps_destroy:
+  image: hashicorp/terraform:1.9
   stage: destroy
   script:
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE init -input=false -reconfigure
-    - docker run --rm --user "$(id -u):$(id -g)"
-        -v "$REPO_HOST_DIR:/workspace" -w $APPS_TF_WORKDIR
-        -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION
-        -e TF_VAR_rds_db_password
-        $TF_IMAGE destroy -input=false -auto-approve
+    - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$APPS_TF_WORKDIR destroy -input=false -auto-approve
   when: manual
 
 # ── PROD — main branch ────────────────────────────────────────────────────────
@@ -78,7 +50,7 @@ stages:
 apps:validate:
   extends: .apps_validate
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/prod"
+    APPS_TF_WORKDIR: "apps/environments/prod"
     CLUSTER_STATE_ENV: "prod"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
@@ -89,7 +61,7 @@ apps:validate:
 apps:plan:
   extends: .apps_plan
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/prod"
+    APPS_TF_WORKDIR: "apps/environments/prod"
   artifacts:
     paths:
       - apps/environments/prod/tfplan
@@ -105,7 +77,7 @@ apps:plan:
 apps:apply:
   extends: .apps_apply
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/prod"
+    APPS_TF_WORKDIR: "apps/environments/prod"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -117,7 +89,7 @@ apps:apply:
 apps:destroy:
   extends: .apps_destroy
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/prod"
+    APPS_TF_WORKDIR: "apps/environments/prod"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -129,7 +101,7 @@ apps:destroy:
 apps:homolog:validate:
   extends: .apps_validate
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog"
+    APPS_TF_WORKDIR: "apps/environments/homolog"
     CLUSTER_STATE_ENV: "homolog"
   rules:
     - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
@@ -140,7 +112,7 @@ apps:homolog:validate:
 apps:homolog:plan:
   extends: .apps_plan
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog"
+    APPS_TF_WORKDIR: "apps/environments/homolog"
   artifacts:
     paths:
       - apps/environments/homolog/tfplan
@@ -156,7 +128,7 @@ apps:homolog:plan:
 apps:homolog:apply:
   extends: .apps_apply
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog"
+    APPS_TF_WORKDIR: "apps/environments/homolog"
   rules:
     - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -168,7 +140,7 @@ apps:homolog:apply:
 apps:homolog:destroy:
   extends: .apps_destroy
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog"
+    APPS_TF_WORKDIR: "apps/environments/homolog"
   rules:
     - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -182,7 +154,7 @@ apps:homolog:destroy:
 apps2:validate:
   extends: .apps_validate
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/prod-app2"
+    APPS_TF_WORKDIR: "apps/environments/prod-app2"
     CLUSTER_STATE_ENV: "prod"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
@@ -193,7 +165,7 @@ apps2:validate:
 apps2:plan:
   extends: .apps_plan
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/prod-app2"
+    APPS_TF_WORKDIR: "apps/environments/prod-app2"
   artifacts:
     paths:
       - apps/environments/prod-app2/tfplan
@@ -209,7 +181,7 @@ apps2:plan:
 apps2:apply:
   extends: .apps_apply
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/prod-app2"
+    APPS_TF_WORKDIR: "apps/environments/prod-app2"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -221,7 +193,7 @@ apps2:apply:
 apps2:destroy:
   extends: .apps_destroy
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/prod-app2"
+    APPS_TF_WORKDIR: "apps/environments/prod-app2"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -233,7 +205,7 @@ apps2:destroy:
 apps2:homolog:validate:
   extends: .apps_validate
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog-app2"
+    APPS_TF_WORKDIR: "apps/environments/homolog-app2"
     CLUSTER_STATE_ENV: "homolog"
   rules:
     - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
@@ -244,7 +216,7 @@ apps2:homolog:validate:
 apps2:homolog:plan:
   extends: .apps_plan
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog-app2"
+    APPS_TF_WORKDIR: "apps/environments/homolog-app2"
   artifacts:
     paths:
       - apps/environments/homolog-app2/tfplan
@@ -260,7 +232,7 @@ apps2:homolog:plan:
 apps2:homolog:apply:
   extends: .apps_apply
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog-app2"
+    APPS_TF_WORKDIR: "apps/environments/homolog-app2"
   rules:
     - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -272,7 +244,7 @@ apps2:homolog:apply:
 apps2:homolog:destroy:
   extends: .apps_destroy
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog-app2"
+    APPS_TF_WORKDIR: "apps/environments/homolog-app2"
   rules:
     - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -284,7 +256,7 @@ apps2:homolog:destroy:
 demo-api:homolog:validate:
   extends: .apps_validate
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog-demo-api"
+    APPS_TF_WORKDIR: "apps/environments/homolog-demo-api"
     CLUSTER_STATE_ENV: "homolog"
   rules:
     - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
@@ -295,7 +267,7 @@ demo-api:homolog:validate:
 demo-api:homolog:plan:
   extends: .apps_plan
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog-demo-api"
+    APPS_TF_WORKDIR: "apps/environments/homolog-demo-api"
   artifacts:
     paths:
       - apps/environments/homolog-demo-api/tfplan
@@ -311,7 +283,7 @@ demo-api:homolog:plan:
 demo-api:homolog:apply:
   extends: .apps_apply
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog-demo-api"
+    APPS_TF_WORKDIR: "apps/environments/homolog-demo-api"
   rules:
     - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
       changes:
@@ -323,7 +295,7 @@ demo-api:homolog:apply:
 demo-api:homolog:destroy:
   extends: .apps_destroy
   variables:
-    APPS_TF_WORKDIR: "/workspace/apps/environments/homolog-demo-api"
+    APPS_TF_WORKDIR: "apps/environments/homolog-demo-api"
   rules:
     - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
       changes:
