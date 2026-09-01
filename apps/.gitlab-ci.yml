@@ -309,3 +309,54 @@ demo-api:homolog:destroy:
       changes:
         - apps/**/*
         - modules/**/*
+
+# ── DEMO2 HOMOLOG — homolog branch ────────────────────────────────────────
+
+demo2:homolog:validate:
+  extends: .apps_validate
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/homolog-demo2"
+    CLUSTER_STATE_ENV: "homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+
+demo2:homolog:plan:
+  extends: .apps_plan
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/homolog-demo2"
+  artifacts:
+    paths:
+      - apps/environments/homolog-demo2/tfplan
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - demo2:homolog:validate
+
+demo2:homolog:apply:
+  extends: .apps_apply
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/homolog-demo2"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - demo2:homolog:plan
+
+demo2:homolog:destroy:
+  extends: .apps_destroy
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/homolog-demo2"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
