@@ -11,7 +11,9 @@ stages:
 # ── Job templates (hidden) ────────────────────────────────────────────────────
 
 .apps_validate:
-  image: hashicorp/terraform:1.9
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
   stage: validate
   before_script:
     - apk add --no-cache aws-cli
@@ -22,14 +24,18 @@ stages:
     - terraform -chdir=$APPS_TF_WORKDIR validate
 
 .apps_plan:
-  image: hashicorp/terraform:1.9
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
   stage: plan
   script:
     - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$APPS_TF_WORKDIR plan -input=false -out=tfplan
 
 .apps_apply:
-  image: hashicorp/terraform:1.9
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
   stage: apply
   script:
     - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
@@ -38,7 +44,9 @@ stages:
   allow_failure: false
 
 .apps_destroy:
-  image: hashicorp/terraform:1.9
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
   stage: destroy
   script:
     - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure

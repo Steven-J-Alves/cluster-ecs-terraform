@@ -10,21 +10,27 @@ stages:
 # ── Job templates (hidden) ────────────────────────────────────────────────────
 
 .network_validate:
-  image: hashicorp/terraform:1.9
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
   stage: validate
   script:
     - terraform -chdir=$NETWORK_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$NETWORK_TF_WORKDIR validate
 
 .network_plan:
-  image: hashicorp/terraform:1.9
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
   stage: plan
   script:
     - terraform -chdir=$NETWORK_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$NETWORK_TF_WORKDIR plan -input=false -out=tfplan
 
 .network_apply:
-  image: hashicorp/terraform:1.9
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
   stage: apply
   script:
     - terraform -chdir=$NETWORK_TF_WORKDIR init -input=false -reconfigure
@@ -33,7 +39,9 @@ stages:
   allow_failure: false
 
 .network_destroy:
-  image: hashicorp/terraform:1.9
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
   stage: destroy
   script:
     - terraform -chdir=$NETWORK_TF_WORKDIR init -input=false -reconfigure
