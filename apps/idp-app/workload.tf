@@ -10,10 +10,10 @@ locals {
 module "workload" {
   source = "../../modules/ecs_ec2/workload"
 
-  name           = "api"
+  name           = var.workload_type
   app_name       = local.base_name
   type           = "http"
-  container_name = "container-${local.base_name}-api"
+  container_name = "container-${local.workload_name}"
   port           = var.port
   host_header    = var.domain
 

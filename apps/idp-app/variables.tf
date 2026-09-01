@@ -77,3 +77,14 @@ variable "kriolu_kloud_vpn" {
   type        = string
   default     = "10.220.0.0/16"
 }
+
+variable "workload_type" {
+  description = "Workload type: api, worker, front, scheduler, manager"
+  type        = string
+  default     = "api"
+
+  validation {
+    condition     = contains(["api", "worker", "front", "scheduler", "manager"], var.workload_type)
+    error_message = "workload_type must be one of: api, worker, front, scheduler, manager."
+  }
+}
